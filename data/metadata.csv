@@ -1,0 +1,6 @@
+doc_id,title,year,agency,topic,url,local_file,file_type,download_status,notes
+DOC001,Missouri State Wildlife Action Plan,2015,Missouri Department of Conservation,Wildlife conservation planning,https://www.mdc.mo.gov/sites/default/files/2020-04/SWAP_0.pdf,data/raw/DOC001.pdf,pdf,downloaded,Existing local file retained.
+DOC002,Missouri Wetland Program Plan,2023-2028,Missouri / EPA,"Wetlands, monitoring, restoration",https://www.epa.gov/system/files/documents/2024-06/missouri_wetland-program-plan-20240117-cw.pdf,data/raw/DOC002.pdf,pdf,downloaded,Existing local file retained.
+DOC003,North American Waterfowl Management Plan Update,2024,USFWS / NAWMP partners,Waterfowl management,https://www.fws.gov/sites/default/files/documents/2024-04/1445.pdf,data/raw/DOC003.pdf,pdf,downloaded,Existing local file retained.
+DOC004,NAWMP Value Proposition,2016,North American Waterfowl Management Plan,Waterfowl conservation value,https://nawmp.org/sites/default/files/2022-03/NAWMP%20Value%20Prop%20Abbreviated%20version%202016%20FINAL_sm.pdf,data/raw/DOC004.pdf,pdf,downloaded,Existing local file retained.
+DOC005,Aquatic Invasive Species in the Chesapeake Bay Watershed,2020,USGS,Aquatic invasive species,https://pubs.usgs.gov/of/2020/1057/ofr20201057.pdf,data/raw/DOC005.pdf,pdf,downloaded,Existing local file retained.

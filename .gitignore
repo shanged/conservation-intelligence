@@ -1,0 +1,39 @@
+# Byte-compiled Python and tool caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Python environments and packaging
+.venv/
+venv/
+env/
+ENV/
+build/
+dist/
+*.egg-info/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+*.key
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Streamlit local settings
+.streamlit/secrets.toml
+
+# Generated corpus and application artifacts
+data/raw/*
+data/processed/*
+db/*.db
+db/vector_index/*
+outputs/*
+
