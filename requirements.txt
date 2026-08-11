@@ -1,2 +1,6 @@
 requests
 pypdf
+pandas
+streamlit
+sentence-transformers
+chromadb

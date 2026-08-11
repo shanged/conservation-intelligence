@@ -4,15 +4,17 @@ A small, reproducible prototype for organizing public conservation documents and
 
 ## Current scope
 
-This initial phase covers only `DOC001` through `DOC005` and provides:
+The current prototype covers `DOC001` through `DOC005` and provides:
 
 - the recommended repository structure;
 - source metadata for the five documents;
 - a downloader that saves source PDFs locally;
-- text extraction with page markers; and
-- a minimal Streamlit corpus view.
+- text extraction with page markers;
+- overlapping, page-aware chunks stored in SQLite;
+- literal keyword and local semantic search; and
+- Streamlit Corpus and Search tabs.
 
-Entity extraction, embeddings, semantic search, wiki generation, and chatbot features are intentionally deferred.
+Entity and relationship extraction, wiki generation, and chatbot features are intentionally deferred.
 
 ## Setup
 
@@ -44,6 +46,25 @@ Extract text from downloaded files:
 python scripts/02_extract_text.py
 ```
 
+Build page-aware chunks and the SQLite database:
+
+```powershell
+python scripts/03_build_chunks.py
+```
+
+Build or refresh the local Chroma semantic index:
+
+```powershell
+python scripts/04_build_vector_index.py
+```
+
+Run a command-line keyword or semantic search:
+
+```powershell
+python scripts/search_chunks.py "wetland restoration"
+python scripts/semantic_search.py "wetland restoration" --top-k 5
+```
+
 Launch the minimal application:
 
 ```powershell
@@ -56,7 +77,7 @@ streamlit run app.py
 data/raw/          Downloaded source files
 data/processed/    Extracted plain text
 data/metadata.csv  Source metadata and processing status
-db/                Future SQLite database and vector index
+db/                Generated SQLite database and local Chroma vector index
 scripts/           Reproducible pipeline steps
 wiki/              Future entity-centered wiki pages
 outputs/           Future structured analysis outputs
@@ -64,4 +85,3 @@ tests/             Future evaluation questions and tests
 ```
 
 The original source URL remains in `data/metadata.csv` so every local document can be traced to its public source.
-
