@@ -18,11 +18,6 @@ if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
 from search_chunks import search_chunks  # noqa: E402
-from semantic_search import (  # noqa: E402
-    VectorIndexNotFoundError,
-    semantic_search,
-)
-from chatbot import answer_question  # noqa: E402
 
 
 st.set_page_config(
@@ -127,17 +122,26 @@ def search_tab() -> None:
         return
 
     semantic = search_mode == "Semantic Search"
-    try:
-        if semantic:
+    if semantic:
+        # Importing SentenceTransformers also imports Transformers and Torch.
+        # Keep that dependency chain out of Streamlit's initial script run so
+        # the app shell renders before any model/index resources are touched.
+        try:
+            from semantic_search import VectorIndexNotFoundError, semantic_search
+
             results = semantic_search(query, top_k=result_count)
-        else:
+        except VectorIndexNotFoundError as exc:
+            st.warning(str(exc))
+            return
+        except Exception as exc:
+            st.error(f"Search could not be completed: {exc}")
+            return
+    else:
+        try:
             results = search_chunks(query, DATABASE_PATH, limit=result_count)
-    except VectorIndexNotFoundError as exc:
-        st.warning(str(exc))
-        return
-    except Exception as exc:
-        st.error(f"Search could not be completed: {exc}")
-        return
+        except Exception as exc:
+            st.error(f"Search could not be completed: {exc}")
+            return
 
     if not results:
         st.info("No matching chunks were found.")
@@ -206,6 +210,11 @@ def chatbot_tab() -> None:
             st.markdown(prompt)
         with st.chat_message("assistant"):
             try:
+                # The chatbot uses semantic retrieval, so load it only after a
+                # question is submitted rather than during the initial render.
+                from semantic_search import VectorIndexNotFoundError
+                from chatbot import answer_question
+
                 response = answer_question(prompt).to_dict()
                 render_chat_response(response)
             except VectorIndexNotFoundError as exc:

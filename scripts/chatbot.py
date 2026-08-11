@@ -19,6 +19,24 @@ ROOT = Path(__file__).resolve().parents[1]
 DATABASE = ROOT / "db" / "conservation.db"
 WIKI_ROOT = ROOT / "wiki"
 STOPWORDS = {"the", "a", "an", "and", "or", "of", "to", "in", "for", "what", "which", "are", "is", "do", "does", "how", "across", "public", "documents", "document", "mention", "discuss", "evidence", "corpus", "provide", "about"}
+SUMMARY_WORDS = {"generate", "short", "cited", "summary", "summarize"}
+SUMMARY_THEMES = (
+    (
+        "Protection and restoration",
+        "EPA conservation programs pair wetland protection with restoration initiatives across its regions.",
+        ({"wetland", "wetlands"}, {"protect", "protection"}, {"restore", "restoration"}),
+    ),
+    (
+        "Monitoring and assessment",
+        "Monitoring and assessment track wetland status and change so decision-makers can understand causes and implications.",
+        ({"wetland", "wetlands"}, {"monitoring", "assessment", "reports"}, {"status", "change", "outcomes", "implications"}),
+    ),
+    (
+        "Ecological and community benefits",
+        "Wetlands filter water, protect communities from floods, and provide habitat for fish and other wildlife.",
+        ({"wetland", "wetlands"}, {"habitat", "wildlife"}, {"water quality", "nutrient", "sediment", "flood"}),
+    ),
+)
 
 
 @dataclass(frozen=True)
@@ -55,13 +73,68 @@ def cite(doc_id: str, page: str) -> str:
     return f"[{doc_id}, p. {page}]"
 
 
-def best_sentence(text: str, query: str, length: int = 300) -> str:
-    terms = {t for t in re.findall(r"[a-z]{3,}", query.casefold()) if t not in STOPWORDS}
-    candidates = [" ".join(s.split()) for s in re.split(r"(?<=[.!?])\s+", text) if len(s.split()) >= 6]
+def content_terms(text: str) -> set[str]:
+    return {t for t in re.findall(r"[a-z]{3,}", text.casefold()) if t not in STOPWORDS | SUMMARY_WORDS}
+
+
+def sentence_quality(sentence: str, query: str) -> float:
+    """Score prose quality and relevance; reject common OCR/navigation debris."""
+    clean = " ".join(sentence.split())
+    words = re.findall(r"[A-Za-z][A-Za-z'-]*", clean)
+    if len(words) < 7 or len(words) > 65:
+        return -10.0
+    if clean.endswith(("...", "…")) or not re.search(r"[.!?]$", clean):
+        return -10.0
+    if clean[:1].islower() or clean.startswith("(") or re.match(r"^(and|or|but|which|that|including)\b", clean, re.I):
+        return -10.0
+    if re.search(r"\b(?:Management Objective|Core Element|Activity 20\d\d|Literature Cited)\b", clean, re.I):
+        return -10.0
+    number_tokens = re.findall(r"\b\d+(?:[-–]\d+)?\b", clean)
+    if len(number_tokens) >= 4 or re.search(r"(?:\bPage\s+\d+\b.*){2,}", clean, re.I):
+        return -10.0
+    heading_hits = len(re.findall(r"\b(?:overview|contents|literature cited|case study|appendix|index|chapter|page)\b", clean, re.I))
+    if heading_hits >= 2:
+        return -10.0
+    commas = clean.count(",")
+    if commas >= 7 or (commas >= 4 and sum(w[:1].isupper() for w in words) > len(words) * .35):
+        return -10.0
+    overlap = len(content_terms(query) & content_terms(clean))
+    declarative = 1.5 if re.search(r"\b(?:is|are|was|were|has|have|provides?|supports?|protects?|restores?|improves?|informs?|requires?|will)\b", clean, re.I) else 0.0
+    return overlap * 2.0 + declarative - abs(len(words) - 28) / 30
+
+
+def candidate_sentences(text: str) -> list[str]:
+    normalized = re.sub(r"\s+", " ", text).strip()
+    candidates = []
+    for part in re.split(r"(?<=[.!?])\s+", normalized):
+        part = part.strip()
+        # Web navigation and PDF headings are sometimes glued to the first
+        # real sentence. Keep the declarative tail rather than exposing the
+        # preceding menu or table-of-contents labels.
+        starters = list(re.finditer(r"\b(?:The|These|This|Produced|Efficient|Wetland conservation activities)\b", part))
+        for match in starters:
+            tail = part[match.start():]
+            if match.start() > 20 and len(tail.split()) >= 7:
+                part = tail
+                break
+        if part:
+            candidates.append(part)
+    return candidates
+
+
+def best_sentence(text: str, query: str, length: int = 360) -> str:
+    candidates = candidate_sentences(text)
     if not candidates:
-        candidates = [" ".join(text.split())]
-    sentence = max(candidates, key=lambda s: (sum(t in s.casefold() for t in terms), -abs(len(s) - 220)))
-    return sentence if len(sentence) <= length else sentence[:length - 1].rstrip() + "…"
+        return ""
+    sentence = max(candidates, key=lambda item: sentence_quality(item, query))
+    if sentence_quality(sentence, query) < 0 or len(sentence) > length:
+        return ""
+    return sentence
+
+
+def near_duplicate(left: str, right: str) -> bool:
+    a, b = content_terms(left), content_terms(right)
+    return bool(a and b) and len(a & b) / min(len(a), len(b)) >= .72
 
 
 def semantic_evidence(query: str, limit: int = 7) -> list[Evidence]:
@@ -74,8 +147,10 @@ def semantic_evidence(query: str, limit: int = 7) -> list[Evidence]:
             if counts[result.doc_id] >= maximum or any(e.chunk_id == result.chunk_id for e in selected):
                 continue
             snippet = best_sentence(result.window_text, query)
+            if not snippet or result.similarity < .30:
+                continue
             snippet_key = re.sub(r"\W+", " ", snippet.casefold()).strip()
-            if snippet_key in seen_snippets:
+            if snippet_key in seen_snippets or any(near_duplicate(snippet, item.snippet) for item in selected):
                 continue
             seen_snippets.add(snippet_key)
             selected.append(Evidence(result.title, result.doc_id, result.page, result.source_url,
@@ -84,6 +159,31 @@ def semantic_evidence(query: str, limit: int = 7) -> list[Evidence]:
             if len(selected) == limit:
                 return selected
     return selected
+
+
+def supports_theme(item: Evidence, required_groups: tuple[set[str], ...]) -> bool:
+    text = item.snippet.casefold()
+    return all(any(term in text for term in group) for group in required_groups)
+
+
+def thematic_summary(query: str) -> tuple[str, list[Evidence]]:
+    """Build a deterministic, concise synthesis for summary questions."""
+    subject = " ".join(sorted(content_terms(query)))
+    chosen: list[tuple[str, str, Evidence]] = []
+    used_docs: set[str] = set()
+    for label, claim, required_groups in SUMMARY_THEMES:
+        theme_terms = " ".join(sorted(set().union(*required_groups)))
+        candidates = semantic_evidence(f"{subject} {theme_terms}", 8)
+        supported = [item for item in candidates if supports_theme(item, required_groups)]
+        supported.sort(key=lambda item: (item.doc_id not in used_docs, item.similarity), reverse=True)
+        if supported:
+            item = supported[0]
+            chosen.append((label, claim, item))
+            used_docs.add(item.doc_id)
+    if len(chosen) < 2:
+        return "", [item for _, _, item in chosen]
+    lines = [f"- **{label}.** {claim} {cite(item.doc_id, item.page)}" for label, claim, item in chosen]
+    return "The corpus highlights several complementary approaches to wetland conservation:\n" + "\n".join(lines), [item for _, _, item in chosen]
 
 
 def entity_rank(entity_type: str, limit: int) -> list[tuple[str, int, int, Evidence]]:
@@ -170,12 +270,13 @@ def answer_question(query: str, evidence_limit: int = 7) -> ChatResponse:
         evidence = semantic
         if not sufficient(query, evidence):
             return ChatResponse("The corpus does not provide enough evidence to identify grounded open questions.", (), tuple(evidence), True)
-        answer = (
-            "The current evidence leaves several recurring questions open:\n"
-            f"- Which findings remain current, especially where reports describe plans rather than measured outcomes? {cite(evidence[0].doc_id,evidence[0].page)}\n"
-            f"- How broadly do findings apply beyond the locations documented in the corpus? {cite(evidence[1].doc_id,evidence[1].page)}\n"
-            f"- Which reported threats and management actions have quantified ecological outcomes? {cite(evidence[2].doc_id,evidence[2].page)}"
+        prompts = (
+            "Which findings remain current, especially where reports describe plans rather than measured outcomes?",
+            "How broadly do findings apply beyond the locations documented in the corpus?",
+            "Which reported threats and management actions have quantified ecological outcomes?",
         )
+        questions = [f"- {prompt} {cite(item.doc_id, item.page)}" for prompt, item in zip(prompts, evidence[:3])]
+        answer = "The current evidence leaves several recurring questions open:\n" + "\n".join(questions)
     elif "relationship between invasive carp" in lower:
         evidence = semantic
         with sqlite3.connect(DATABASE) as connection:
@@ -185,15 +286,18 @@ def answer_question(query: str, evidence_limit: int = 7) -> ChatResponse:
         qualifier = "The structured extraction found no direct `species_uses_habitat` relation for invasive carp, so co-mention is not treated as proof of habitat use. " if direct == 0 else "The structured extraction contains a direct habitat-use relation. "
         answer = qualifier + "Retrieved evidence connects invasive-carp research and management with aquatic systems as follows:\n" + "\n".join(
             f"- {e.snippet} {cite(e.doc_id,e.page)}" for e in evidence[:5])
+    elif "short cited summary" in lower or "summarize" in lower:
+        answer, evidence = thematic_summary(query)
+        if not answer:
+            return ChatResponse(
+                "The corpus does not provide enough high-quality evidence to synthesize that summary reliably.",
+                (), tuple(evidence), True,
+            )
     else:
         evidence = semantic
         if not sufficient(query, evidence):
             return ChatResponse("The corpus does not provide enough evidence to answer that question reliably.", (), tuple(evidence), True)
-        if "short cited summary" in lower:
-            answer = "The retrieved corpus evidence supports this concise summary:\n" + "\n".join(
-                f"- {e.snippet} {cite(e.doc_id,e.page)}" for e in evidence[:6])
-        else:
-            answer = document_answer("The most relevant corpus evidence is:", evidence)
+        answer = document_answer("The most relevant corpus evidence is:", evidence)
 
     citations = tuple(dict.fromkeys(re.findall(r"\[DOC\d{3}, (?:Web|p\. \d+|pp\. \d+–\d+)\]", answer)))
     return ChatResponse(answer, citations, tuple(evidence), False)

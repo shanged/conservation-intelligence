@@ -2,15 +2,15 @@
   {
     "number": 1,
     "question": "What documents discuss aquatic invasive species?",
-    "answer": "The most relevant corpus evidence is:\n- **Aquatic Invasive Species in the Chesapeake Bay Watershed**: Many others participated in the prepa- ration of the documents related to aquatic invasive species, which are cited here. [DOC005, pp. 1–8]\n- **USGS Nonindigenous Aquatic Species Database Paper**: Geological Survey, 67 pp, http://pubs.usgs.gov/ wsp/wsp2294/ (Accessed 30 July 2014) South Carolina Aquatic Invasive Species Task Force and South Carolina Department of Natural Resources (2007) South Carolina Aquatic Invasive Species Management Plan, https://www.dnr.sc.gov/water/envaff/aquatic/aisf… [DOC011, pp. 11–12]\n- **Invasive Species Accomplishments Report**: The SEINeD is a tool that enables users to screen and link datasets for occurrences of non-native and invasive aquatic species tracked by the NAS Database. [DOC007, pp. 22–24]\n- **Aquatic Invasive Species Commission Report**: Recommendation 1.2 As the primary bodies governing the coordination of interagency management, the National Invasive Species Council (NISC), the Invasive Species Advisory Committee (ISAC), and the Aquatic Nuisance Species Task Force (ANSTF) must be strengthened to meet the challenges of [DOC009, pp. 3–4]\n- **Aquatic Invasive Species Research Report**: In carrying out this research, the Secretary is directed to work with USACE District offices representing diverse geographic regions of the continental United States that are impacted by aquatic invasive species (Section [DOC006, pp. 1–3]\n- **National Aquatic Invasive Species Outreach Workshop Summary Report**: The workshop was funded by the US Fish and Wildlife Service and was held in response to findings and recommendations from a national assessment of aquatic invasive species (AIS) outreach to recreational water users. [DOC010, pp. 1–3]\n- **Invasive Species Accomplishments Report PDF**: DEPARTMENT OF THE INTERIOR ACCOMPLISHMENTS REPORT INVASIVE SPECIES STRATEGIC PLAN 2021-2025 PROTECTING AMERICA'S RESOURCES FROM INVASIVE SPECIES Cover Images 1. [DOC008, pp. 1–5]",
+    "answer": "The most relevant corpus evidence is:\n- **Aquatic Invasive Species in the Chesapeake Bay Watershed**: Many others participated in the prepa- ration of the documents related to aquatic invasive species, which are cited here. [DOC005, pp. 1–8]\n- **Invasive Species Accomplishments Report**: The SEINeD is a tool that enables users to screen and link datasets for occurrences of non-native and invasive aquatic species tracked by the NAS Database. [DOC007, pp. 22–24]\n- **USGS Nonindigenous Aquatic Species Database Paper**: Types of graphs currently available include: introductions over time, introductions by taxonomic group, native transplants versus foreign (exotics), introductions by pathway, and continent of origin of exotic species. [DOC011, pp. 6–7]\n- **Aquatic Invasive Species Research Report**: A plan to address the spread and impact of aquatic invasive species is also provided, as directed in Section 1108(c) of the 2018 Water Resources Development Act. [DOC006, pp. 1–3]\n- **National Aquatic Invasive Species Outreach Workshop Summary Report**: Introduction The National Aquatic Invasive Species Outreach Workshop was held as part of the North American Invasive Species Management Association Annual Conference in Missoula, Montana, October 1st, 2024. [DOC010, pp. 1–3]\n- **Invasive Species Accomplishments Report PDF**: DEPARTMENT OF THE INTERIOR ACCOMPLISHMENTS REPORT INVASIVE SPECIES STRATEGIC PLAN 2021-2025 PROTECTING AMERICA'S RESOURCES FROM INVASIVE SPECIES Cover Images 1. [DOC008, pp. 1–5]\n- **Invasive Carp Strategic Science Plan**: Department of the Interior, 54 p., accessed November 16, 2022, at https://www.doi.gov/ ppa/ doi- invasive- species- strategic- plan. [DOC012, pp. 26–29]",
     "citations": [
       "[DOC005, pp. 1–8]",
-      "[DOC011, pp. 11–12]",
       "[DOC007, pp. 22–24]",
-      "[DOC009, pp. 3–4]",
+      "[DOC011, pp. 6–7]",
       "[DOC006, pp. 1–3]",
       "[DOC010, pp. 1–3]",
-      "[DOC008, pp. 1–5]"
+      "[DOC008, pp. 1–5]",
+      "[DOC012, pp. 26–29]"
     ],
     "evidence": [
       {
@@ -23,15 +23,6 @@
         "similarity": 0.7209011316299438
       },
       {
-        "title": "USGS Nonindigenous Aquatic Species Database Paper",
-        "doc_id": "DOC011",
-        "page": "11-12",
-        "source_url": "https://pdfs.semanticscholar.org/8a85/a4db10dd8eb5a9fea35094ac9885e5e9974b.pdf",
-        "snippet": "Geological Survey, 67 pp, http://pubs.usgs.gov/ wsp/wsp2294/ (Accessed 30 July 2014) South Carolina Aquatic Invasive Species Task Force and South Carolina Department of Natural Resources (2007) South Carolina Aquatic Invasive Species Management Plan, https://www.dnr.sc.gov/water/envaff/aquatic/aisf…",
-        "chunk_id": "DOC011_CHUNK_0009",
-        "similarity": 0.7088106274604797
-      },
-      {
         "title": "Invasive Species Accomplishments Report",
         "doc_id": "DOC007",
         "page": "22-24",
@@ -41,20 +32,20 @@
         "similarity": 0.692949652671814
       },
       {
-        "title": "Aquatic Invasive Species Commission Report",
-        "doc_id": "DOC009",
-        "page": "3-4",
-        "source_url": "https://www.trcp.org/wp-content/uploads/2023/02/Aquatic-Invasive-Species-Report-3-28-2023.pdf",
-        "snippet": "Recommendation 1.2 As the primary bodies governing the coordination of interagency management, the National Invasive Species Council (NISC), the Invasive Species Advisory Committee (ISAC), and the Aquatic Nuisance Species Task Force (ANSTF) must be strengthened to meet the challenges of",
-        "chunk_id": "DOC009_CHUNK_0002",
-        "similarity": 0.6785298585891724
+        "title": "USGS Nonindigenous Aquatic Species Database Paper",
+        "doc_id": "DOC011",
+        "page": "6-7",
+        "source_url": "https://pdfs.semanticscholar.org/8a85/a4db10dd8eb5a9fea35094ac9885e5e9974b.pdf",
+        "snippet": "Types of graphs currently available include: introductions over time, introductions by taxonomic group, native transplants versus foreign (exotics), introductions by pathway, and continent of origin of exotic species.",
+        "chunk_id": "DOC011_CHUNK_0005",
+        "similarity": 0.6829928159713745
       },
       {
         "title": "Aquatic Invasive Species Research Report",
         "doc_id": "DOC006",
         "page": "1-3",
         "source_url": "https://usace.contentdm.oclc.org/digital/api/collection/p16021coll5/id/35588/download",
-        "snippet": "In carrying out this research, the Secretary is directed to work with USACE District offices representing diverse geographic regions of the continental United States that are impacted by aquatic invasive species (Section",
+        "snippet": "A plan to address the spread and impact of aquatic invasive species is also provided, as directed in Section 1108(c) of the 2018 Water Resources Development Act.",
         "chunk_id": "DOC006_CHUNK_0001",
         "similarity": 0.6781817674636841
       },
@@ -63,7 +54,7 @@
         "doc_id": "DOC010",
         "page": "1-3",
         "source_url": "https://www.fws.gov/carp/sites/default/files/documents/2025-09/national-aquatic-invasive-species-outreach-workshop-summary-report.pdf",
-        "snippet": "The workshop was funded by the US Fish and Wildlife Service and was held in response to findings and recommendations from a national assessment of aquatic invasive species (AIS) outreach to recreational water users.",
+        "snippet": "Introduction The National Aquatic Invasive Species Outreach Workshop was held as part of the North American Invasive Species Management Association Annual Conference in Missoula, Montana, October 1st, 2024.",
         "chunk_id": "DOC010_CHUNK_0001",
         "similarity": 0.6721147298812866
       },
@@ -75,6 +66,15 @@
         "snippet": "DEPARTMENT OF THE INTERIOR ACCOMPLISHMENTS REPORT INVASIVE SPECIES STRATEGIC PLAN 2021-2025 PROTECTING AMERICA'S RESOURCES FROM INVASIVE SPECIES Cover Images 1.",
         "chunk_id": "DOC008_CHUNK_0001",
         "similarity": 0.6190993785858154
+      },
+      {
+        "title": "Invasive Carp Strategic Science Plan",
+        "doc_id": "DOC012",
+        "page": "26-29",
+        "source_url": "https://www.govinfo.gov/content/pkg/GOVPUB-I19-PURL-gpo224710/pdf/GOVPUB-I19-PURL-gpo224710.pdf",
+        "snippet": "Department of the Interior, 54 p., accessed November 16, 2022, at https://www.doi.gov/ ppa/ doi- invasive- species- strategic- plan.",
+        "chunk_id": "DOC012_CHUNK_0015",
+        "similarity": 0.6141521334648132
       }
     ],
     "insufficient": false,
@@ -155,7 +155,7 @@
         "doc_id": "DOC005",
         "page": "24-26",
         "source_url": "https://pubs.usgs.gov/of/2020/1057/ofr20201057.pdf",
-        "snippet": "Both FWS and NPS are highly invested in AIS management within the Chesapeake Bay watershed, and both agencies work with",
+        "snippet": "SRBC has a particularly unique challenge in reconciling fish passage needs related to restora- tion of important anadromous species (eel and shad) with con- tainment of invasive fish, including northern snakehead and blue catfish, at four hydroelectric dam passage barriers on the lower Susquehanna River.",
         "chunk_id": "DOC005_CHUNK_0013",
         "similarity": 0.3770054578781128
       },
@@ -164,7 +164,7 @@
         "doc_id": "DOC009",
         "page": "8-10",
         "source_url": "https://www.trcp.org/wp-content/uploads/2023/02/Aquatic-Invasive-Species-Report-3-28-2023.pdf",
-        "snippet": "Congress should direct funding to the ANSTF to commission a study or provide an updated report on the effectiveness of AIS statutes, regulations and policies at the federal, state, and tribal levels, identifying well -performing interagency regulations and making recommendations to member agencies…",
+        "snippet": "Congress should direct funding to the ANSTF to commission a study or provide an updated report on the effectiveness of AIS statutes, regulations and policies at the federal, state, and tribal levels, identifying well -performing interagency regulations and making recommendations to member agencies and state and tribal governments on model legislation.",
         "chunk_id": "DOC009_CHUNK_0006",
         "similarity": 0.3571988344192505
       }
@@ -205,27 +205,27 @@
       {
         "title": "State Wildlife Action Plans Report with State Summaries",
         "doc_id": "DOC013",
-        "page": "45-47",
+        "page": "15-17",
         "source_url": "https://www.fishwildlife.org/application/files/6415/1856/1631/StateWildlifeActionPlansReportwithStateSummaries.pdf",
-        "snippet": "The Action Plan identiﬁ es ﬁ ve key issues: 1) integrating wildlife conservation into local land-use decisions; 2) restoring and conserving riparian habitats; 3) providing essential water for wildlife; 4) control- ling invasive species; 5)",
-        "chunk_id": "DOC013_CHUNK_0028",
-        "similarity": 0.6423836350440979
+        "snippet": "Identifying Challenges to Wildlife and their Habitats Eff ective conservation depends on an as- sessment of the specifi c issues, challeng- es, and problems that are contributing to declines in wildlife and their habitat.",
+        "chunk_id": "DOC013_CHUNK_0010",
+        "similarity": 0.6040622591972351
       },
       {
         "title": "DocumentCloud Wetland Search",
         "doc_id": "DOC035",
-        "page": "6-9",
+        "page": "205-208",
         "source_url": "https://www.documentcloud.org/public/search?q=wetland",
-        "snippet": "3.8.2 Affected Environment 3.8-3 3.8.3 Environmental Consequences 3.8-6 3.8.4 Mitigation and Unavoidable Environmental Impacts 3.8-12 3.9 Cultural Resources 3.9-1 3.9.1 Analysis Methods 3.9-1 3.9.2 Affected Environment 3.9-7 3.9.3 Environmental Consequences 3.9-10 3.9.4 Mitigation and Unavoidable E…",
-        "chunk_id": "DOC035_CHUNK_0003",
-        "similarity": 0.5714291930198669
+        "snippet": "Potential impacts caused by rail line construction are discussed first for each resource, followed by potential impacts caused by rail operations.",
+        "chunk_id": "DOC035_CHUNK_0124",
+        "similarity": 0.562842845916748
       },
       {
         "title": "North American Waterfowl Management Plan Update",
         "doc_id": "DOC003",
         "page": "1-5",
         "source_url": "https://www.fws.gov/sites/default/files/documents/2024-04/1445.pdf",
-        "snippet": "Le Plan nord-américain de gestion de la sauvagine de 1986 lançait une nouvelle ère en conservation de la faune, en établissant un plan directeur pour la création de partenariats publics-privés en vue de conserver les ressources naturelles.",
+        "snippet": "Aujourd’hui, des milliers de partenaires dans les trois pays ont établi un legs continental de conservation, fondé sur des données scientifiques solides et une approche axée sur les paysages.",
         "chunk_id": "DOC003_CHUNK_0001",
         "similarity": 0.5527042150497437
       },
@@ -243,18 +243,18 @@
         "doc_id": "DOC006",
         "page": "16-18",
         "source_url": "https://usace.contentdm.oclc.org/digital/api/collection/p16021coll5/id/35588/download",
-        "snippet": "Mitigation includes standalone projects; work undertaken concurrently with project construction; and operation, maintenance, and management of mitigation measures.",
+        "snippet": "When considering ecosystem restoration projects or in assessing mitigation alternatives, the opportunity to restore native species and habitats is considered for each project as appropriate.",
         "chunk_id": "DOC006_CHUNK_0011",
         "similarity": 0.5492986440658569
       },
       {
         "title": "State Wildlife Action Plans Report with State Summaries",
         "doc_id": "DOC013",
-        "page": "15-17",
+        "page": "185-188",
         "source_url": "https://www.fishwildlife.org/application/files/6415/1856/1631/StateWildlifeActionPlansReportwithStateSummaries.pdf",
-        "snippet": "Identifying Challenges to Wildlife and their Habitats Eff ective conservation depends on an as- sessment of the specifi c issues, challeng- es, and problems that are contributing to declines in wildlife and their habitat.",
-        "chunk_id": "DOC013_CHUNK_0010",
-        "similarity": 0.6040622591972351
+        "snippet": "Aquatic “species of conservation concern” includes those that have demonstrated low or declining populations.",
+        "chunk_id": "DOC013_CHUNK_0095",
+        "similarity": 0.6015118956565857
       }
     ],
     "insufficient": false,
@@ -266,7 +266,7 @@
   {
     "number": 4,
     "question": "What documents discuss wetlands or wetland management?",
-    "answer": "The most relevant corpus evidence is:\n- **Missouri Wetland Program Plan**: Page 19 20 Additional Resources Missouri Department of Natural Resources https://dnr.mo.gov/water/hows-water/state/wetlands and https://dnr.mo.gov/water/business-industry-other-entities/permits-certification-engineering-fees/section-401-water-quality Core Elements of an Effective State and Tribal W… [DOC002, pp. 16–20]\n- **EPA Wetlands Program**: More on Efforts for Wetlands Within the EPA Regions Read the latest updates on the EPA's technical and financial assistance to state, territory and Tribal wetlands programs. [DOC023, Web]\n- **USFWS National Wetlands Inventory**: Produced on a decadal basis, these reports inform decision-makers and the public on the status of the nation's wetlands as well as potential causes and implications of wetland change. [DOC022, Web]\n- **DocumentCloud Wetland Search**: Construction Wetland Habitat Fill material placed in wetlands during construction would result in the permanent loss of wetlands, associated vegetation, and any habitat that the wetland provides for fish and wildlife. [DOC035, pp. 167–168]\n- **State Wildlife Action Plans Report with State Summaries**: Freshwater Wetlands Ownership: Unknown, but wetlands over 12.4 acres in size are regulated by the state. [DOC013, pp. 171–172]\n- **USFWS Library**: Fish and Wildlife Service is the principal federal agency tasked with providing information to the public on the extent and status of the nation’s wetland and deepwater habitats, as well as changes to these habitats over time. [DOC028, Web]\n- **Missouri Wetlands Information**: As a transition zone between land and a variety of aquatic environments, wetlands share some characteristics of both, yet they have their own unique qualities belonging to neither land (terrestrial) nor water habitats. [DOC025, Web]",
+    "answer": "The most relevant corpus evidence is:\n- **Missouri Wetland Program Plan**: K-12 classes where the importance of wetlands is presented to students. [DOC002, pp. 16–20]\n- **EPA Wetlands Program**: The protection of wetlands is supported by various Clean Water Act programs and the EPA's initiatives. [DOC023, Web]\n- **USFWS National Wetlands Inventory**: Produced on a decadal basis, these reports inform decision-makers and the public on the status of the nation's wetlands as well as potential causes and implications of wetland change. [DOC022, Web]\n- **DocumentCloud Wetland Search**: Construction Wetland Habitat Fill material placed in wetlands during construction would result in the permanent loss of wetlands, associated vegetation, and any habitat that the wetland provides for fish and wildlife. [DOC035, pp. 167–168]\n- **State Wildlife Action Plans Report with State Summaries**: Development of tax incentives and disincentives, easements, and cooperative management programs is crucial to the achievement of this task. [DOC013, pp. 171–172]\n- **USFWS Library**: Fish and Wildlife Service is the principal federal agency tasked with providing information to the public on the extent and status of the nation’s wetland and deepwater habitats, as well as changes to these habitats over time. [DOC028, Web]\n- **Missouri Wetlands Information**: As a transition zone between land and aquatic habitats (such as lakes, streams, and rivers), wetlands have one or more of these characteristics: At least periodically, the wetland is dominated by aquatic plants (hydrophytes). [DOC025, Web]",
     "citations": [
       "[DOC002, pp. 16–20]",
       "[DOC023, Web]",
@@ -282,7 +282,7 @@
         "doc_id": "DOC002",
         "page": "16-20",
         "source_url": "https://www.epa.gov/system/files/documents/2024-06/missouri_wetland-program-plan-20240117-cw.pdf",
-        "snippet": "Page 19 20 Additional Resources Missouri Department of Natural Resources https://dnr.mo.gov/water/hows-water/state/wetlands and https://dnr.mo.gov/water/business-industry-other-entities/permits-certification-engineering-fees/section-401-water-quality Core Elements of an Effective State and Tribal W…",
+        "snippet": "K-12 classes where the importance of wetlands is presented to students.",
         "chunk_id": "DOC002_CHUNK_0008",
         "similarity": 0.6832308173179626
       },
@@ -291,7 +291,7 @@
         "doc_id": "DOC023",
         "page": "Web",
         "source_url": "https://www.epa.gov/wetlands",
-        "snippet": "More on Efforts for Wetlands Within the EPA Regions Read the latest updates on the EPA's technical and financial assistance to state, territory and Tribal wetlands programs.",
+        "snippet": "The protection of wetlands is supported by various Clean Water Act programs and the EPA's initiatives.",
         "chunk_id": "DOC023_CHUNK_0001",
         "similarity": 0.6820321083068848
       },
@@ -318,7 +318,7 @@
         "doc_id": "DOC013",
         "page": "171-172",
         "source_url": "https://www.fishwildlife.org/application/files/6415/1856/1631/StateWildlifeActionPlansReportwithStateSummaries.pdf",
-        "snippet": "Freshwater Wetlands Ownership: Unknown, but wetlands over 12.4 acres in size are regulated by the state.",
+        "snippet": "Development of tax incentives and disincentives, easements, and cooperative management programs is crucial to the achievement of this task.",
         "chunk_id": "DOC013_CHUNK_0087",
         "similarity": 0.6248467564582825
       },
@@ -336,7 +336,7 @@
         "doc_id": "DOC025",
         "page": "Web",
         "source_url": "https://mdc.mo.gov/discover-nature/habitats/wetlands",
-        "snippet": "As a transition zone between land and a variety of aquatic environments, wetlands share some characteristics of both, yet they have their own unique qualities belonging to neither land (terrestrial) nor water habitats.",
+        "snippet": "As a transition zone between land and aquatic habitats (such as lakes, streams, and rivers), wetlands have one or more of these characteristics: At least periodically, the wetland is dominated by aquatic plants (hydrophytes).",
         "chunk_id": "DOC025_CHUNK_0001",
         "similarity": 0.6068810224533081
       }
@@ -350,7 +350,7 @@
   {
     "number": 5,
     "question": "What public documents mention waterfowl conservation?",
-    "answer": "The most relevant corpus evidence is:\n- **North American Waterfowl Management Plan Update**: Thus, if waterfowl populations are to be sustained, conservation efforts must continually be adjusted. [DOC003, pp. 6–9]\n- **NAWMP Value Proposition**: Since 1986, the Plan has been a catalyst for sustaining abundant waterfowl populations by conserving landscapes through public-private partnerships guided by sound science. [DOC004, pp. 1–3]\n- **Ducks Unlimited Conservation Resources**: Learn More For People Conservation for waterfowl benefits hunters, anglers, hikers, and all society by expanding recreational opportunities, promoting productive ecosystems, and protecting open spaces, while also cleaning our water and safeguarding our communities. [DOC021, Web]\n- **State Wildlife Action Plans Report with State Summaries**: Advise Conservation Commissions, Open Space Committees and Planning Boards. [DOC013, pp. 158–161]\n- **USFWS Migratory Birds Program**: Jul 28, 2026 Wildlife Wonders 100 years of conservation and stewardship at Johnston Atoll Established by President Calvin Coolidge in [DOC026, Web]\n- **MDC Management Plans**: lime the fields and hedge rows healthy soil equals healthy plants equals healthy animals I know this has been discussed before, but I really think it is a disservice to waterfowl hunters to shut the entire area down for any length of time. [DOC019, pp. 24–25]\n- **North American Waterfowl Management Plan Update**: vi Executive Summary vii Part 1—Strategic Direction 1 The North American Waterfowl Management Plan—A Conservation Legacy 1 The Changing Context of Waterfowl Conservation 3 Evolution of Waterfowl Conservation in North America. [DOC003, p. 5]",
+    "answer": "The most relevant corpus evidence is:\n- **North American Waterfowl Management Plan Update**: Thus, if waterfowl populations are to be sustained, conservation efforts must continually be adjusted. [DOC003, pp. 6–9]\n- **NAWMP Value Proposition**: Since 1986, the Plan has been a catalyst for sustaining abundant waterfowl populations by conserving landscapes through public-private partnerships guided by sound science. [DOC004, pp. 1–3]\n- **Ducks Unlimited Conservation Resources**: Learn More For People Conservation for waterfowl benefits hunters, anglers, hikers, and all society by expanding recreational opportunities, promoting productive ecosystems, and protecting open spaces, while also cleaning our water and safeguarding our communities. [DOC021, Web]\n- **State Wildlife Action Plans Report with State Summaries**: Eastern red bat, Timber rattlesnake, Whip- poor-will, Bobcat Development or conversion of habitat into home lots, roads, businesses, etc.; resulting fragmentation degrades quality of remaining habitat. [DOC013, pp. 158–161]\n- **USFWS Migratory Birds Program**: Fish and Wildlife Service to reduce bird collisions Spring migration is winding down and many of our favorite birds have returned to back yard feeders for their summer stay. [DOC026, Web]\n- **MDC Management Plans**: Then A and B pool could be closed 2019 Schell-Osage Conservation Area Management Plan Page 25 while the remaining pools are re-opened. [DOC019, pp. 24–25]\n- **North American Waterfowl Management Plan Update**: The North American Waterfowl Management Plan—A Conservation Legacy 1 The Changing Context of Waterfowl Conservation 3 Evolution of Waterfowl Conservation in North America. [DOC003, p. 5]",
     "citations": [
       "[DOC003, pp. 6–9]",
       "[DOC004, pp. 1–3]",
@@ -393,7 +393,7 @@
         "doc_id": "DOC013",
         "page": "158-161",
         "source_url": "https://www.fishwildlife.org/application/files/6415/1856/1631/StateWildlifeActionPlansReportwithStateSummaries.pdf",
-        "snippet": "Advise Conservation Commissions, Open Space Committees and Planning Boards.",
+        "snippet": "Eastern red bat, Timber rattlesnake, Whip- poor-will, Bobcat Development or conversion of habitat into home lots, roads, businesses, etc.; resulting fragmentation degrades quality of remaining habitat.",
         "chunk_id": "DOC013_CHUNK_0079",
         "similarity": 0.5746336579322815
       },
@@ -402,7 +402,7 @@
         "doc_id": "DOC026",
         "page": "Web",
         "source_url": "https://www.fws.gov/program/migratory-birds",
-        "snippet": "Jul 28, 2026 Wildlife Wonders 100 years of conservation and stewardship at Johnston Atoll Established by President Calvin Coolidge in",
+        "snippet": "Fish and Wildlife Service to reduce bird collisions Spring migration is winding down and many of our favorite birds have returned to back yard feeders for their summer stay.",
         "chunk_id": "DOC026_CHUNK_0001",
         "similarity": 0.5504725575447083
       },
@@ -411,7 +411,7 @@
         "doc_id": "DOC019",
         "page": "24-25",
         "source_url": "https://mdc.mo.gov/wildlife/mdc-management-plans",
-        "snippet": "lime the fields and hedge rows healthy soil equals healthy plants equals healthy animals I know this has been discussed before, but I really think it is a disservice to waterfowl hunters to shut the entire area down for any length of time.",
+        "snippet": "Then A and B pool could be closed 2019 Schell-Osage Conservation Area Management Plan Page 25 while the remaining pools are re-opened.",
         "chunk_id": "DOC019_CHUNK_0009",
         "similarity": 0.5454975366592407
       },
@@ -420,7 +420,7 @@
         "doc_id": "DOC003",
         "page": "5",
         "source_url": "https://www.fws.gov/sites/default/files/documents/2024-04/1445.pdf",
-        "snippet": "vi Executive Summary vii Part 1—Strategic Direction 1 The North American Waterfowl Management Plan—A Conservation Legacy 1 The Changing Context of Waterfowl Conservation 3 Evolution of Waterfowl Conservation in North America.",
+        "snippet": "The North American Waterfowl Management Plan—A Conservation Legacy 1 The Changing Context of Waterfowl Conservation 3 Evolution of Waterfowl Conservation in North America.",
         "chunk_id": "DOC003_CHUNK_0002",
         "similarity": 0.6582139730453491
       }
@@ -434,30 +434,30 @@
   {
     "number": 6,
     "question": "What is the relationship between invasive carp and aquatic habitat management?",
-    "answer": "The structured extraction found no direct `species_uses_habitat` relation for invasive carp, so co-mention is not treated as proof of habitat use. Retrieved evidence connects invasive-carp research and management with aquatic systems as follows:\n- Geological Survey Invasive Carp Strategic Framework, 2023–27 Cupp, A.R., Brey, M.K., Calfee, R.D., Chapman, D.C., Erickson, R., Fischer, J., Fritts, A.K., George, A.E., Jackson, P.R., Knights, B.C., Saari, G.N., and Kočovský, P.M., 2021, Emerging control strategies for integrated pest management of… [DOC012, pp. 25–26]\n- Conservation Letters 4(6): 433– 442, http://onlinelibrary.wiley.com/doi/10.1111/j.1755-263X.2011.00 196.x/full CRBAIS (2011) Columbia River Basin Aquatic Invasive Species (CRBAIS) Database. [DOC011, p. 11]\n- Like terrestrial habitat systems, aquatic systems are extremely vulnerable to the effects of invasive species, especially due to the high connectivity of most aquatic systems. [DOC001, pp. 170–172]\n- Invasive carp, such as Hypophthalmichthys molatrix (silver carp), also received mention by multiple agencies (3 of the 10 stakeholder groups) because these fish represent priority AIS in nearby watersheds and a threat for introduction and dis- semination within the Chesapeake Bay watershed from the… [DOC005, pp. 13–14]\n- Geological Survey Invasive Carp Strategic Framework, 2023–27 Cupp, A.R., Brey, M.K., Calfee, R.D., Chapman, D.C., Erickson, R., [DOC012, pp. 24–26]",
+    "answer": "The structured extraction found no direct `species_uses_habitat` relation for invasive carp, so co-mention is not treated as proof of habitat use. Retrieved evidence connects invasive-carp research and management with aquatic systems as follows:\n- Geological Survey Invasive Carp Science 7 Deterrents One factor that likely contributes significantly to the inva- siveness of invasive carp is their mobility (Vallazza and oth- ers, 2020; Coulter and others, 2022). [DOC012, pp. 14–15]\n- Stohlgren TJ, Folfelder KA, Graham J, Waller DM (2011) Assessing citizen science data quality: an invasive species case study. [DOC011, p. 11]\n- Like terrestrial habitat systems, aquatic systems are extremely vulnerable to the effects of invasive species, especially due to the high connectivity of most aquatic systems. [DOC001, pp. 170–172]\n- Invasive carp, such as Hypophthalmichthys molatrix (silver carp), also received mention by multiple agencies (3 of the 10 stakeholder groups) because these fish represent priority AIS in nearby watersheds and a threat for introduction and dis- semination within the Chesapeake Bay watershed from these neighboring regions. [DOC005, pp. 13–14]\n- Chapman, D.C., 2020, “Modified Unified Method” of carp capture: U.S. [DOC012, pp. 28–30]",
     "citations": [
-      "[DOC012, pp. 25–26]",
+      "[DOC012, pp. 14–15]",
       "[DOC011, p. 11]",
       "[DOC001, pp. 170–172]",
       "[DOC005, pp. 13–14]",
-      "[DOC012, pp. 24–26]"
+      "[DOC012, pp. 28–30]"
     ],
     "evidence": [
       {
         "title": "Invasive Carp Strategic Science Plan",
         "doc_id": "DOC012",
-        "page": "25-26",
+        "page": "14-15",
         "source_url": "https://www.govinfo.gov/content/pkg/GOVPUB-I19-PURL-gpo224710/pdf/GOVPUB-I19-PURL-gpo224710.pdf",
-        "snippet": "Geological Survey Invasive Carp Strategic Framework, 2023–27 Cupp, A.R., Brey, M.K., Calfee, R.D., Chapman, D.C., Erickson, R., Fischer, J., Fritts, A.K., George, A.E., Jackson, P.R., Knights, B.C., Saari, G.N., and Kočovský, P.M., 2021, Emerging control strategies for integrated pest management of…",
-        "chunk_id": "DOC012_CHUNK_0014",
-        "similarity": 0.7688761353492737
+        "snippet": "Geological Survey Invasive Carp Science 7 Deterrents One factor that likely contributes significantly to the inva- siveness of invasive carp is their mobility (Vallazza and oth- ers, 2020; Coulter and others, 2022).",
+        "chunk_id": "DOC012_CHUNK_0007",
+        "similarity": 0.7252833247184753
       },
       {
         "title": "USGS Nonindigenous Aquatic Species Database Paper",
         "doc_id": "DOC011",
         "page": "11",
         "source_url": "https://pdfs.semanticscholar.org/8a85/a4db10dd8eb5a9fea35094ac9885e5e9974b.pdf",
-        "snippet": "Conservation Letters 4(6): 433– 442, http://onlinelibrary.wiley.com/doi/10.1111/j.1755-263X.2011.00 196.x/full CRBAIS (2011) Columbia River Basin Aquatic Invasive Species (CRBAIS) Database.",
+        "snippet": "Stohlgren TJ, Folfelder KA, Graham J, Waller DM (2011) Assessing citizen science data quality: an invasive species case study.",
         "chunk_id": "DOC011_CHUNK_0008",
         "similarity": 0.6713294386863708
       },
@@ -475,25 +475,25 @@
         "doc_id": "DOC005",
         "page": "13-14",
         "source_url": "https://pubs.usgs.gov/of/2020/1057/ofr20201057.pdf",
-        "snippet": "Invasive carp, such as Hypophthalmichthys molatrix (silver carp), also received mention by multiple agencies (3 of the 10 stakeholder groups) because these fish represent priority AIS in nearby watersheds and a threat for introduction and dis- semination within the Chesapeake Bay watershed from the…",
+        "snippet": "Invasive carp, such as Hypophthalmichthys molatrix (silver carp), also received mention by multiple agencies (3 of the 10 stakeholder groups) because these fish represent priority AIS in nearby watersheds and a threat for introduction and dis- semination within the Chesapeake Bay watershed from these neighboring regions.",
         "chunk_id": "DOC005_CHUNK_0003",
         "similarity": 0.6347148418426514
       },
       {
         "title": "Invasive Carp Strategic Science Plan",
         "doc_id": "DOC012",
-        "page": "24-26",
+        "page": "28-30",
         "source_url": "https://www.govinfo.gov/content/pkg/GOVPUB-I19-PURL-gpo224710/pdf/GOVPUB-I19-PURL-gpo224710.pdf",
-        "snippet": "Geological Survey Invasive Carp Strategic Framework, 2023–27 Cupp, A.R., Brey, M.K., Calfee, R.D., Chapman, D.C., Erickson, R.,",
-        "chunk_id": "DOC012_CHUNK_0013",
-        "similarity": 0.731533944606781
+        "snippet": "Chapman, D.C., 2020, “Modified Unified Method” of carp capture: U.S.",
+        "chunk_id": "DOC012_CHUNK_0016",
+        "similarity": 0.7191132307052612
       },
       {
         "title": "USGS Nonindigenous Aquatic Species Database Paper",
         "doc_id": "DOC011",
         "page": "10-11",
         "source_url": "https://pdfs.semanticscholar.org/8a85/a4db10dd8eb5a9fea35094ac9885e5e9974b.pdf",
-        "snippet": "The NAS database is referenced in the National Invasive Species Management Plans (National Invasive Species Council 2001, 2008) and the Aquatic Nuisance Species Task Force Strategic Plan (Aquatic Nuisance Species Task Force 2007) as a system",
+        "snippet": "2014), and national policy making (silver carp listing in the Lacey Act) (U.S.",
         "chunk_id": "DOC011_CHUNK_0007",
         "similarity": 0.6541228890419006
       }
@@ -507,7 +507,7 @@
   {
     "number": 7,
     "question": "Which documents are most relevant to Missouri conservation planning?",
-    "answer": "The most relevant corpus evidence is:\n- **Missouri State Wildlife Action Plan**: The purpose is: To assess the health of Missouri’s plants and animals, and identify actions necessary for the long-term conservation of these resources and the essential habitat systems that sustain them. [DOC001, pp. 17–18]\n- **MDC Annual Review FY2021**: The Missouri Comprehensive Conservation Strategy (CCS) integrates the Missouri State Wildlife Action Plan, Forest Action Plan, and other conservation priorities into a comprehensive plan, meeting the requirements of both the U.S. [DOC018, Web]\n- **MDC Annual Review FY2024**: Over 350 people attended to hear presentations and discussions from a wide variety of experts, professionals, agricultural producers, and other interested parties on the state of grassland conservation in Missouri. [DOC016, Web]\n- **State Wildlife Action Plans Report with State Summaries**: Missouri’s planning approach Utilizing wildlife information gathered over the past 30 years, Missouri’s Comprehensive Wildlife Strat- egy promotes management that beneﬁ ts all wildlife, rather than targeting sin- gle species. [DOC013, pp. 139–141]\n- **MDC Management Plans**: Guidelines for avoiding and minimizing impacts to federally-listed bats on Missouri Department of Conservation lands. [DOC019, pp. 17–24]\n- **MDC Annual Review FY2023**: Missouri Comprehensive Conservation Strategy During this past year, 19 regional Comprehensive Conservation Strategy (CCS) trainings were provided to over 350 managers, technicians, and supervisors. [DOC017, Web]\n- **Missouri Conservation Report**: Missouri’s CCS embraces landscape- scale conservation informed by natural community and wildlife diversity needs, working to maintain, enhance, restore, and re -create healthy natural systems. [DOC015, pp. 5–6]",
+    "answer": "The most relevant corpus evidence is:\n- **Missouri State Wildlife Action Plan**: The CCS is a process that identifies Missouri conserva- tion priorities to inform decision-making regarding the greatest opportunities for sustainable conservation of fish, forest, and wildlife. [DOC001, pp. 17–18]\n- **MDC Annual Review FY2021**: The Missouri Comprehensive Conservation Strategy (CCS) integrates the Missouri State Wildlife Action Plan, Forest Action Plan, and other conservation priorities into a comprehensive plan, meeting the requirements of both the U.S. [DOC018, Web]\n- **MDC Annual Review FY2024**: Missouri Comprehensive Conservation Strategy In FY23, MDC reestablished the Comprehensive Conservation Strategy (CCS) working group, which provides guidance to CCS implementation. [DOC016, Web]\n- **State Wildlife Action Plans Report with State Summaries**: Missouri’s planning approach Utilizing wildlife information gathered over the past 30 years, Missouri’s Comprehensive Wildlife Strat- egy promotes management that beneﬁ ts all wildlife, rather than targeting sin- gle species. [DOC013, pp. 139–141]\n- **MDC Management Plans**: Guidelines for avoiding and minimizing impacts to federally-listed bats on Missouri Department of Conservation lands. [DOC019, pp. 17–24]\n- **MDC Annual Review FY2023**: Missouri Comprehensive Conservation Strategy During this past year, 19 regional Comprehensive Conservation Strategy (CCS) trainings were provided to over 350 managers, technicians, and supervisors. [DOC017, Web]\n- **Missouri Conservation Report**: Missouri’s CCS embraces landscape- scale conservation informed by natural community and wildlife diversity needs, working to maintain, enhance, restore, and re -create healthy natural systems. [DOC015, pp. 5–6]",
     "citations": [
       "[DOC001, pp. 17–18]",
       "[DOC018, Web]",
@@ -523,7 +523,7 @@
         "doc_id": "DOC001",
         "page": "17-18",
         "source_url": "https://www.mdc.mo.gov/sites/default/files/2020-04/SWAP_0.pdf",
-        "snippet": "The purpose is: To assess the health of Missouri’s plants and animals, and identify actions necessary for the long-term conservation of these resources and the essential habitat systems that sustain them.",
+        "snippet": "The CCS is a process that identifies Missouri conserva- tion priorities to inform decision-making regarding the greatest opportunities for sustainable conservation of fish, forest, and wildlife.",
         "chunk_id": "DOC001_CHUNK_0009",
         "similarity": 0.739519476890564
       },
@@ -541,7 +541,7 @@
         "doc_id": "DOC016",
         "page": "Web",
         "source_url": "https://mdc.mo.gov/magazines/missouri-conservationist/2025-01/annual-review-fiscal-year-july-1-2023-june-30-2024",
-        "snippet": "Over 350 people attended to hear presentations and discussions from a wide variety of experts, professionals, agricultural producers, and other interested parties on the state of grassland conservation in Missouri.",
+        "snippet": "Missouri Comprehensive Conservation Strategy In FY23, MDC reestablished the Comprehensive Conservation Strategy (CCS) working group, which provides guidance to CCS implementation.",
         "chunk_id": "DOC016_CHUNK_0005",
         "similarity": 0.6916130781173706
       },
@@ -591,24 +591,21 @@
   {
     "number": 8,
     "question": "Generate a short cited summary of wetland conservation evidence in the corpus.",
-    "answer": "The retrieved corpus evidence supports this concise summary:\n- Memorial Wetlands 135 Forested Swamp 136 Case Study: Mingo Basin and Big Cane Conservation Areas 137 Fen 138 Case Study: Grasshopper Hollow Natural Area 139 Literature Cited 140 River and Stream Conservation Overview 141 River and Stream Regions Map 142 Conservation Opportunity Areas 143 Conservati… [DOC001, pp. 14–15]\n- Produced on a decadal basis, these reports inform decision-makers and the public on the status of the nation's wetlands as well as potential causes and implications of wetland change. [DOC022, Web]\n- More on Efforts for Wetlands Within the EPA Regions Read the latest updates on the EPA's technical and financial assistance to state, territory and Tribal wetlands programs. [DOC023, Web]\n- See what techniques we use to protect and enhance existing habitats while restoring those previously degraded.​ Learn More Science Since 1937, we’ve relied on sound science to guide our conservation. [DOC021, Web]\n- 97 species statewide including: American black duck, Blue-winged teal, Ruddy duck, Black-crowned night- heron, Glossy ibis, Eastern spadefoot, Red-shouldered hawk, Devil crawﬁ sh, Yellow rail, Fowler’s toad, Southern leopard frog, Northern harrier, Sedge wren, Short-eared owl, Queen snake, Coal ski… [DOC013, pp. 171–172]\n- This biological foundation logically links the Plan’s continental population goals to its regional conservation strategies and, therefore, depends upon knowledge of how landscape [DOC003, pp. 15–17]",
+    "answer": "The corpus highlights several complementary approaches to wetland conservation:\n- **Protection and restoration.** EPA conservation programs pair wetland protection with restoration initiatives across its regions. [DOC023, Web]\n- **Monitoring and assessment.** Monitoring and assessment track wetland status and change so decision-makers can understand causes and implications. [DOC022, Web]\n- **Ecological and community benefits.** Wetlands filter water, protect communities from floods, and provide habitat for fish and other wildlife. [DOC029, Web]",
     "citations": [
-      "[DOC001, pp. 14–15]",
-      "[DOC022, Web]",
       "[DOC023, Web]",
-      "[DOC021, Web]",
-      "[DOC013, pp. 171–172]",
-      "[DOC003, pp. 15–17]"
+      "[DOC022, Web]",
+      "[DOC029, Web]"
     ],
     "evidence": [
       {
-        "title": "Missouri State Wildlife Action Plan",
-        "doc_id": "DOC001",
-        "page": "14-15",
-        "source_url": "https://www.mdc.mo.gov/sites/default/files/2020-04/SWAP_0.pdf",
-        "snippet": "Memorial Wetlands 135 Forested Swamp 136 Case Study: Mingo Basin and Big Cane Conservation Areas 137 Fen 138 Case Study: Grasshopper Hollow Natural Area 139 Literature Cited 140 River and Stream Conservation Overview 141 River and Stream Regions Map 142 Conservation Opportunity Areas 143 Conservati…",
-        "chunk_id": "DOC001_CHUNK_0007",
-        "similarity": 0.6620389223098755
+        "title": "EPA Wetlands Program",
+        "doc_id": "DOC023",
+        "page": "Web",
+        "source_url": "https://www.epa.gov/wetlands",
+        "snippet": "Learn about the EPA's Programs Protecting Wetlands Find more on the EPA's efforts for wetlands protection and restoration through case studies from the EPA's 10 Regions.",
+        "chunk_id": "DOC023_CHUNK_0001",
+        "similarity": 0.6861494779586792
       },
       {
         "title": "USFWS National Wetlands Inventory",
@@ -617,52 +614,16 @@
         "source_url": "https://www.fws.gov/program/national-wetlands-inventory",
         "snippet": "Produced on a decadal basis, these reports inform decision-makers and the public on the status of the nation's wetlands as well as potential causes and implications of wetland change.",
         "chunk_id": "DOC022_CHUNK_0001",
-        "similarity": 0.6380010843276978
+        "similarity": 0.6819020509719849
       },
       {
-        "title": "EPA Wetlands Program",
-        "doc_id": "DOC023",
+        "title": "NOAA Habitat Conservation",
+        "doc_id": "DOC029",
         "page": "Web",
-        "source_url": "https://www.epa.gov/wetlands",
-        "snippet": "More on Efforts for Wetlands Within the EPA Regions Read the latest updates on the EPA's technical and financial assistance to state, territory and Tribal wetlands programs.",
-        "chunk_id": "DOC023_CHUNK_0001",
-        "similarity": 0.6292088031768799
-      },
-      {
-        "title": "Ducks Unlimited Conservation Resources",
-        "doc_id": "DOC021",
-        "page": "Web",
-        "source_url": "https://www.ducks.org/conservation",
-        "snippet": "See what techniques we use to protect and enhance existing habitats while restoring those previously degraded.​ Learn More Science Since 1937, we’ve relied on sound science to guide our conservation.",
-        "chunk_id": "DOC021_CHUNK_0001",
-        "similarity": 0.608711838722229
-      },
-      {
-        "title": "State Wildlife Action Plans Report with State Summaries",
-        "doc_id": "DOC013",
-        "page": "171-172",
-        "source_url": "https://www.fishwildlife.org/application/files/6415/1856/1631/StateWildlifeActionPlansReportwithStateSummaries.pdf",
-        "snippet": "97 species statewide including: American black duck, Blue-winged teal, Ruddy duck, Black-crowned night- heron, Glossy ibis, Eastern spadefoot, Red-shouldered hawk, Devil crawﬁ sh, Yellow rail, Fowler’s toad, Southern leopard frog, Northern harrier, Sedge wren, Short-eared owl, Queen snake, Coal ski…",
-        "chunk_id": "DOC013_CHUNK_0087",
-        "similarity": 0.6083951592445374
-      },
-      {
-        "title": "North American Waterfowl Management Plan Update",
-        "doc_id": "DOC003",
-        "page": "15-17",
-        "source_url": "https://www.fws.gov/sites/default/files/documents/2024-04/1445.pdf",
-        "snippet": "This biological foundation logically links the Plan’s continental population goals to its regional conservation strategies and, therefore, depends upon knowledge of how landscape",
-        "chunk_id": "DOC003_CHUNK_0009",
-        "similarity": 0.6078786253929138
-      },
-      {
-        "title": "Missouri Wetland Program Plan",
-        "doc_id": "DOC002",
-        "page": "16-20",
-        "source_url": "https://www.epa.gov/system/files/documents/2024-06/missouri_wetland-program-plan-20240117-cw.pdf",
-        "snippet": "X X X X X X Page 16 20 Core Element: Water Quality Standards for Wetlands Goals: Improve and protect the water quality of Missouri wetlands in accordance with the Clean Water Act and the department’s Water Protection Program recommendations.",
-        "chunk_id": "DOC002_CHUNK_0008",
-        "similarity": 0.6031359434127808
+        "source_url": "https://www.fisheries.noaa.gov/topic/habitat-conservation",
+        "snippet": "Coastal Wetlands Wetlands filter our water, protect our coastal communities from floods, and provide habitat for fish and other wildlife—but they’re quickly disappearing.",
+        "chunk_id": "DOC029_CHUNK_0003",
+        "similarity": 0.5640351176261902
       }
     ],
     "insufficient": false,
@@ -703,7 +664,7 @@
         "doc_id": "DOC011",
         "page": "3-4",
         "source_url": "https://pdfs.semanticscholar.org/8a85/a4db10dd8eb5a9fea35094ac9885e5e9974b.pdf",
-        "snippet": "occurrence data or literature of general interest on invasion biology, ecology, systematics, taxonomy, or species biology.",
+        "snippet": "The reference database is open to public query http://nas.er.usgs.gov/queries/references/default.aspx) by any field in a citation (author, title, journal, etc.), as well as key words.",
         "chunk_id": "DOC011_CHUNK_0003",
         "similarity": 0.5349389314651489
       },
@@ -712,7 +673,7 @@
         "doc_id": "DOC013",
         "page": "75-77",
         "source_url": "https://www.fishwildlife.org/application/files/6415/1856/1631/StateWildlifeActionPlansReportwithStateSummaries.pdf",
-        "snippet": "**Including terrestrial and aquatic species ***Does not include snails (noted above), nor all marine invertebrates ***Including fresh and marine Wildlife highlights Cliff and Ridge habitats (these areas are",
+        "snippet": "This approach to the overall planning and strategy development was chosen in the recognition that conserv- ing and protecting Hawaii’s unique native wildlife and habitats for future genera- tions is everyone’s responsibility, duty, and honor.",
         "chunk_id": "DOC013_CHUNK_0043",
         "similarity": 0.5167894959449768
       },
@@ -721,18 +682,18 @@
         "doc_id": "DOC007",
         "page": "22-24",
         "source_url": "https://www.doi.gov/media/document/invasive-species-accomplishments-report-2021-2025",
-        "snippet": "(Source: BOR, NPS, Office of Everglades Restoration, OIA, USFWS, USGS) 19 Cumulative number of page views of the main landing page and users of the Invasive Species Habitat Tool (INHABIT) between Fiscal Years 2023-2025.",
+        "snippet": "The SEINeD is a tool that enables users to screen and link datasets for occurrences of non-native and invasive aquatic species tracked by the NAS Database.",
         "chunk_id": "DOC007_CHUNK_0008",
         "similarity": 0.5034937262535095
       },
       {
         "title": "Missouri State Wildlife Action Plan",
         "doc_id": "DOC001",
-        "page": "42-51",
+        "page": "22-24",
         "source_url": "https://www.mdc.mo.gov/sites/default/files/2020-04/SWAP_0.pdf",
-        "snippet": "Completion of the 2011 National Land Cover Database for the conterminous United States: Representing a decade of land cover change information.",
-        "chunk_id": "DOC001_CHUNK_0024",
-        "similarity": 0.486003041267395
+        "snippet": "The Department’s interdivisional Wildlife Diversity Team is currently refining a process for prioritizing species inventory needs to better focus available resources.",
+        "chunk_id": "DOC001_CHUNK_0012",
+        "similarity": 0.4584181308746338
       },
       {
         "title": "USGS Nonindigenous Aquatic Species Database Paper",
@@ -762,11 +723,9 @@
   {
     "number": 10,
     "question": "What important questions remain unanswered by this corpus?",
-    "answer": "The current evidence leaves several recurring questions open:\n- Which findings remain current, especially where reports describe plans rather than measured outcomes? [DOC032, pp. 34–35]\n- How broadly do findings apply beyond the locations documented in the corpus? [DOC011, pp. 3–4]\n- Which reported threats and management actions have quantified ecological outcomes? [DOC035, pp. 185–188]",
+    "answer": "The current evidence leaves several recurring questions open:\n- Which findings remain current, especially where reports describe plans rather than measured outcomes? [DOC032, pp. 34–35]",
     "citations": [
-      "[DOC032, pp. 34–35]",
-      "[DOC011, pp. 3–4]",
-      "[DOC035, pp. 185–188]"
+      "[DOC032, pp. 34–35]"
     ],
     "evidence": [
       {
@@ -777,60 +736,6 @@
         "snippet": "341 In its guidelines to data preservation, the IAEA recommends an assessment of records for their level of importance (e.g., critical, necessary, or useful) to ensure appropriate resources go towards the preservation of important documents.",
         "chunk_id": "DOC032_CHUNK_0043",
         "similarity": 0.3189469575881958
-      },
-      {
-        "title": "USGS Nonindigenous Aquatic Species Database Paper",
-        "doc_id": "DOC011",
-        "page": "3-4",
-        "source_url": "https://pdfs.semanticscholar.org/8a85/a4db10dd8eb5a9fea35094ac9885e5e9974b.pdf",
-        "snippet": "All supporting documentation for occurrences records (e.g., emails, literature citation, photographs) is stored in electronic formats, and are linked to each record (see ‘Supporting Documentation’ below).",
-        "chunk_id": "DOC011_CHUNK_0003",
-        "similarity": 0.26469582319259644
-      },
-      {
-        "title": "DocumentCloud Wetland Search",
-        "doc_id": "DOC035",
-        "page": "185-188",
-        "source_url": "https://www.documentcloud.org/public/search?q=wetland",
-        "snippet": "crucial Winter, crucial Winter, substantial Year-long, crucial Year-long, substantial Summer, crucial Winter, crucial Winter, substantial Year-long, substantial Moose (Alces alces) Winter, crucial Winter, substantial Year-long, crucial Winter, crucial Winter, substantial Year-long, crucial Winter,…",
-        "chunk_id": "DOC035_CHUNK_0114",
-        "similarity": 0.25983959436416626
-      },
-      {
-        "title": "State Wildlife Action Plans Report with State Summaries",
-        "doc_id": "DOC013",
-        "page": "166-167",
-        "source_url": "https://www.fishwildlife.org/application/files/6415/1856/1631/StateWildlifeActionPlansReportwithStateSummaries.pdf",
-        "snippet": "Drafts of the Strategy were made available on the Department’s website where reviewers were encouraged to complete an on-line survey or simply share their thoughts by e-mail.",
-        "chunk_id": "DOC013_CHUNK_0084",
-        "similarity": 0.2510390877723694
-      },
-      {
-        "title": "DocumentCloud Water Quality Search",
-        "doc_id": "DOC033",
-        "page": "34-36",
-        "source_url": "https://www.documentcloud.org/public/search?q=water%20quality",
-        "snippet": "This provision requires the disclosure and analysis of the costs of uncertainty and the costs of proceeding without more and better information.",
-        "chunk_id": "DOC033_CHUNK_0020",
-        "similarity": 0.23985177278518677
-      },
-      {
-        "title": "Missouri State Wildlife Action Plan",
-        "doc_id": "DOC001",
-        "page": "231-237",
-        "source_url": "https://www.mdc.mo.gov/sites/default/files/2020-04/SWAP_0.pdf",
-        "snippet": "After recording the presence of 15 species you realize the highest score possible for this metric.",
-        "chunk_id": "DOC001_CHUNK_0081",
-        "similarity": 0.23776191473007202
-      },
-      {
-        "title": "DocumentCloud Public Search",
-        "doc_id": "DOC031",
-        "page": "7-9",
-        "source_url": "https://www.documentcloud.org/public/search",
-        "snippet": "Statements of economic interests filed by prospective state employees and written evaluations by the Ethics Commission of these statements are not public records until the prospective public servant is appointed or employed by the state.",
-        "chunk_id": "DOC031_CHUNK_0008",
-        "similarity": 0.22242039442062378
       }
     ],
     "insufficient": false,
