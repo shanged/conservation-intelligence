@@ -1,76 +1,50 @@
-"""Extract page-marked text from every downloaded PDF in ``data/raw``.
+"""Create processed text from every downloaded PDF or saved webpage text.
 
-The Milestone 1 corpus is limited to DOC001-DOC005. Each PDF is handled
-independently so one missing, damaged, or otherwise unreadable document does
-not prevent extraction of the remaining sources. This script does not do OCR.
+PDFs retain exact ``--- Page N ---`` boundaries.  Web text is copied without
+invented page numbers; downstream chunking labels it consistently as ``Web``.
+Each source is independent so one malformed input does not stop the run.
 """
-
 from __future__ import annotations
 
 import argparse
 import sys
 from pathlib import Path
-
 from pypdf import PdfReader
 
-
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-RAW_DIR = PROJECT_ROOT / "data" / "raw"
-PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
-INITIAL_DOC_IDS = {f"DOC{number:03d}" for number in range(1, 6)}
-
-
-def parse_args() -> argparse.Namespace:
-    """Parse extraction options."""
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--overwrite",
-        action="store_true",
-        help="Replace extracted text files that already exist.",
-    )
-    return parser.parse_args()
+ROOT = Path(__file__).resolve().parents[1]
+RAW = ROOT / "data" / "raw"
+PROCESSED = ROOT / "data" / "processed"
 
 
 def extract_pdf(path: Path) -> str:
-    """Extract every PDF page and label it for later citation work."""
-    reader = PdfReader(path)
-    sections: list[str] = []
-    for page_number, page in enumerate(reader.pages, start=1):
-        text = (page.extract_text() or "").strip()
-        sections.append(f"--- Page {page_number} ---\n{text}")
+    sections = []
+    for number, page in enumerate(PdfReader(path).pages, 1):
+        sections.append(f"--- Page {number} ---\n{(page.extract_text() or '').strip()}")
     return "\n\n".join(sections).rstrip() + "\n"
 
 
 def main() -> int:
-    """Extract each available initial source into a DOCxxx text file."""
-    args = parse_args()
-    PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--overwrite", action="store_true")
+    args = parser.parse_args()
+    PROCESSED.mkdir(parents=True, exist_ok=True)
     failures = 0
-    sources = sorted(RAW_DIR.glob("DOC*.pdf"))
-
+    sources = sorted(list(RAW.glob("DOC*.pdf")) + list(RAW.glob("DOC*.txt")))
     for source in sources:
-        doc_id = source.stem.upper()
-        if doc_id not in INITIAL_DOC_IDS:
-            print(f"SKIP {source.name}: outside Milestone 1 scope")
+        target = PROCESSED / f"{source.stem.upper()}.txt"
+        if target.exists() and not args.overwrite:
+            print(f"SKIP {source.stem}: processed file exists")
             continue
-        destination = PROCESSED_DIR / f"{doc_id}.txt"
-
-        if destination.exists() and not args.overwrite:
-            print(f"SKIP {doc_id}: extracted text already exists: {destination}")
-            continue
-
         try:
-            text = extract_pdf(source)
-            destination.write_text(text, encoding="utf-8")
+            text = extract_pdf(source) if source.suffix.lower() == ".pdf" else source.read_text(encoding="utf-8")
+            if not text.strip():
+                raise ValueError("no readable text")
+            target.write_text(text, encoding="utf-8")
         except Exception as exc:
             failures += 1
-            print(f"FAILED {doc_id}: {exc}", file=sys.stderr)
+            print(f"FAILED {source.name}: {exc}", file=sys.stderr)
         else:
-            print(f"SAVED {doc_id}: {destination}")
-
-    if not sources:
-        print(f"No PDFs found in {RAW_DIR}")
-
+            print(f"SAVED {target.name}: {len(text):,} characters")
     return 1 if failures else 0
 
 

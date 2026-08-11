@@ -30,7 +30,7 @@ class PageWord:
     """A word paired with the source page on which it appeared."""
 
     text: str
-    page: int
+    page: str
 
 
 @dataclass(frozen=True)
@@ -55,11 +55,12 @@ def parse_page_words(text: str) -> list[PageWord]:
     """Parse exact page markers and attach a page number to every word."""
     markers = list(PAGE_MARKER.finditer(text))
     if not markers:
-        raise ValueError("no page markers found")
+        # HTML-derived sources have no real pages; never manufacture them.
+        return [PageWord(word, "Web") for word in text.split()]
 
     page_words: list[PageWord] = []
     for index, marker in enumerate(markers):
-        page = int(marker.group(1))
+        page = marker.group(1)
         body_start = marker.end()
         body_end = markers[index + 1].start() if index + 1 < len(markers) else len(text)
         page_words.extend(PageWord(word, page) for word in text[body_start:body_end].split())
@@ -70,7 +71,7 @@ def page_label(words: list[PageWord]) -> str:
     """Return a single page or an inclusive readable page range."""
     first_page = words[0].page
     last_page = words[-1].page
-    return str(first_page) if first_page == last_page else f"{first_page}-{last_page}"
+    return first_page if first_page == last_page else f"{first_page}-{last_page}"
 
 
 def chunk_words(words: list[PageWord]) -> list[list[PageWord]]:
@@ -280,4 +281,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

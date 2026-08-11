@@ -36,4 +36,5 @@ data/processed/*
 db/*.db
 db/vector_index/*
 outputs/*
-
+!outputs/entities.csv
+!outputs/relations.csv

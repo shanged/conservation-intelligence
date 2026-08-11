@@ -1,152 +1,136 @@
-"""Download the initial DOC001-DOC005 public conservation sources.
+"""Download PDF sources and extract readable text from web sources.
 
-The script treats ``data/metadata.csv`` as the source of truth. It downloads
-only the five document IDs approved for the prototype's first phase, writes
-each response to a temporary file first, and updates download status and notes
-only after a successful validation and move.
+Metadata is the source of truth.  A final/direct URL recorded in a row's notes
+is used for transparent representative selections while the original ``url``
+column remains unchanged.  Each source fails independently and writes through
+a temporary file so partial downloads are never mistaken for usable sources.
 """
-
 from __future__ import annotations
 
 import argparse
 import csv
+import re
 import shutil
 import sys
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 import requests
+from bs4 import BeautifulSoup
+
+ROOT = Path(__file__).resolve().parents[1]
+METADATA = ROOT / "data" / "metadata.csv"
+USER_AGENT = "conservation-document-intelligence-prototype/0.2"
+FINAL_URL = re.compile(r"final URL\s+(https?://\S+)", re.I)
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-METADATA_PATH = PROJECT_ROOT / "data" / "metadata.csv"
-INITIAL_DOC_IDS = {f"DOC{number:03d}" for number in range(1, 6)}
-USER_AGENT = "conservation-document-intelligence-prototype/0.1"
-
-
-def parse_args() -> argparse.Namespace:
-    """Parse command-line options without performing any network activity."""
+def arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="List planned downloads without requesting any URLs.",
-    )
-    parser.add_argument(
-        "--overwrite",
-        action="store_true",
-        help="Replace local files that already exist.",
-    )
-    parser.add_argument(
-        "--timeout",
-        type=float,
-        default=60.0,
-        help="Per-request timeout in seconds (default: 60).",
-    )
+    parser.add_argument("--overwrite", action="store_true")
+    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--timeout", type=float, default=90)
     return parser.parse_args()
 
 
-def read_metadata(path: Path) -> tuple[list[dict[str, str]], list[str]]:
-    """Return metadata rows and their original field order."""
-    with path.open("r", encoding="utf-8-sig", newline="") as handle:
+def load_rows() -> tuple[list[dict[str, str]], list[str]]:
+    with METADATA.open(encoding="utf-8-sig", newline="") as handle:
         reader = csv.DictReader(handle)
-        if reader.fieldnames is None:
-            raise ValueError(f"Metadata has no header: {path}")
-        return list(reader), list(reader.fieldnames)
+        return list(reader), list(reader.fieldnames or [])
 
 
-def write_metadata(
-    path: Path, rows: list[dict[str, str]], fieldnames: list[str]
-) -> None:
-    """Rewrite metadata after statuses have been updated."""
-    with path.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+def save_rows(rows: list[dict[str, str]], fields: list[str]) -> None:
+    with METADATA.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fields)
         writer.writeheader()
         writer.writerows(rows)
 
 
-def resolve_local_path(value: str) -> Path:
-    """Resolve a metadata path and ensure it stays inside the repository."""
-    candidate = (PROJECT_ROOT / value).resolve()
-    try:
-        candidate.relative_to(PROJECT_ROOT)
-    except ValueError as exc:
-        raise ValueError(f"Local path escapes project root: {value}") from exc
-    return candidate
+def local_path(value: str) -> Path:
+    path = (ROOT / value).resolve()
+    path.relative_to(ROOT)  # Reject paths outside this repository.
+    return path
 
 
-def download_pdf(url: str, destination: Path, timeout: float) -> None:
-    """Stream one PDF to disk and validate its signature before keeping it."""
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    headers = {"User-Agent": USER_AGENT, "Accept": "application/pdf,*/*"}
+def request_url(row: dict[str, str]) -> str:
+    match = FINAL_URL.search(row.get("notes", ""))
+    return match.group(1).rstrip(".;") if match else row["url"]
 
-    with requests.get(
-        url, headers=headers, stream=True, timeout=timeout, allow_redirects=True
-    ) as response:
+
+def readable_html(content: bytes) -> str:
+    """Return main/article text while removing obvious web boilerplate."""
+    soup = BeautifulSoup(content, "html.parser")
+    for tag in soup(["script", "style", "noscript", "svg", "form", "nav", "footer", "header", "aside"]):
+        tag.decompose()
+    root = soup.find("main") or soup.find("article") or soup.body or soup
+    lines = [" ".join(s.split()) for s in root.get_text("\n").splitlines()]
+    lines = [line for line in lines if line and not re.search(r"^(accept|manage) (all )?cookies?$", line, re.I)]
+    return "\n\n".join(lines).strip() + "\n"
+
+
+def fetch(row: dict[str, str], destination: Path, timeout: float) -> None:
+    url = request_url(row)
+    headers = {"User-Agent": USER_AGENT, "Accept": "application/pdf,text/html,*/*"}
+    with requests.get(url, headers=headers, timeout=timeout, stream=True, allow_redirects=True) as response:
         response.raise_for_status()
-        with NamedTemporaryFile(
-            mode="w+b", dir=destination.parent, prefix=f".{destination.name}.", delete=False
-        ) as temporary:
-            temporary_path = Path(temporary.name)
-            try:
-                for chunk in response.iter_content(chunk_size=1024 * 128):
-                    if chunk:
-                        temporary.write(chunk)
-                temporary.flush()
-                temporary.seek(0)
-                if temporary.read(5) != b"%PDF-":
-                    raise ValueError("response does not begin with a PDF signature")
-            except Exception:
-                temporary_path.unlink(missing_ok=True)
-                raise
-
-    shutil.move(str(temporary_path), destination)
+        body = response.content
+    if destination.suffix.lower() == ".pdf":
+        if not body.startswith(b"%PDF-"):
+            raise ValueError("response is not a PDF")
+        payload = body
+    else:
+        text = readable_html(body)
+        if len(text) < 200:
+            raise ValueError(f"webpage extraction produced only {len(text)} characters")
+        payload = text.encode("utf-8")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with NamedTemporaryFile(dir=destination.parent, prefix=f".{destination.name}.", delete=False) as tmp:
+        tmp.write(payload)
+        temporary = Path(tmp.name)
+    shutil.move(str(temporary), destination)
 
 
 def main() -> int:
-    """Download approved rows and record a transparent status for each."""
-    args = parse_args()
-    rows, fieldnames = read_metadata(METADATA_PATH)
-
-    unexpected = {row["doc_id"] for row in rows} - INITIAL_DOC_IDS
-    if unexpected:
-        raise ValueError(f"This phase does not allow document IDs: {sorted(unexpected)}")
-
-    changed = False
+    args = arguments()
+    rows, fields = load_rows()
+    failures = 0
     for row in rows:
         doc_id = row["doc_id"]
-        destination = resolve_local_path(row["local_file"])
-
+        destination = local_path(row["local_file"])
         if args.dry_run:
-            print(f"PLAN {doc_id}: {row['url']} -> {destination}")
+            print(f"PLAN {doc_id}: {request_url(row)} -> {destination.name}")
             continue
-
         if destination.exists() and not args.overwrite:
-            print(f"SKIP {doc_id}: {destination} already exists")
-            row["download_status"] = "downloaded"
-            row["notes"] = "Existing local file retained."
-            changed = True
+            print(f"SKIP {doc_id}: existing file retained")
+            if row["notes"].startswith("Substituted"):
+                row["download_status"] = "substituted"
+            elif "Representative selected:" in row["notes"]:
+                row["download_status"] = "representative document selected"
+            elif destination.suffix.lower() == ".txt":
+                row["download_status"] = "saved as webpage text"
+            else:
+                row["download_status"] = "downloaded"
             continue
-
-        print(f"DOWNLOAD {doc_id}: {row['url']}")
         try:
-            download_pdf(row["url"], destination, args.timeout)
-        except (requests.RequestException, OSError, ValueError) as exc:
+            fetch(row, destination, args.timeout)
+        except Exception as exc:  # One remote failure must not stop the corpus.
+            failures += 1
             row["download_status"] = "failed"
-            row["notes"] = str(exc)
-            changed = True
+            row["notes"] = f"{row['notes']} Failure: {type(exc).__name__}: {exc}".strip()
             print(f"FAILED {doc_id}: {exc}", file=sys.stderr)
         else:
-            row["download_status"] = "downloaded"
-            row["notes"] = ""
-            changed = True
-            print(f"SAVED {doc_id}: {destination}")
-
-    if changed:
-        write_metadata(METADATA_PATH, rows, fieldnames)
-    return 0
+            if row["notes"].startswith("Substituted"):
+                row["download_status"] = "substituted"
+            elif "Representative selected:" in row["notes"]:
+                row["download_status"] = "representative document selected"
+            elif destination.suffix.lower() == ".txt":
+                row["download_status"] = "saved as webpage text"
+            else:
+                row["download_status"] = "downloaded"
+            print(f"SAVED {doc_id}: {destination.name}")
+    if not args.dry_run:
+        save_rows(rows, fields)
+    return 1 if failures else 0
 
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

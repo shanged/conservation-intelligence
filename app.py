@@ -1,4 +1,4 @@
-"""Streamlit Corpus and Search interface for Milestone 2B."""
+"""Streamlit Corpus and Search interface for the expanded Milestone 2D corpus."""
 
 from __future__ import annotations
 
@@ -71,6 +71,26 @@ def corpus_tab() -> None:
         column_config={"url": st.column_config.LinkColumn("Source URL")},
     )
 
+    # Milestone 3A diagnostic only; a full Wiki UI is deliberately deferred.
+    if DATABASE_PATH.exists():
+        import sqlite3
+        with st.expander("Entity extraction diagnostics"):
+            try:
+                with sqlite3.connect(DATABASE_PATH) as connection:
+                    entity_counts = pd.read_sql_query(
+                        "SELECT entity_type, COUNT(*) AS count FROM entities GROUP BY entity_type ORDER BY entity_type",
+                        connection,
+                    )
+                    relation_counts = pd.read_sql_query(
+                        "SELECT relation, COUNT(*) AS count FROM relations GROUP BY relation ORDER BY relation",
+                        connection,
+                    )
+                left, right = st.columns(2)
+                left.dataframe(entity_counts, hide_index=True, width="stretch")
+                right.dataframe(relation_counts, hide_index=True, width="stretch")
+            except Exception:
+                st.info("Run scripts/05_extract_entities.py to build extraction diagnostics.")
+
 
 def display_result(result: object, semantic: bool) -> None:
     """Render one keyword or semantic result consistently."""
@@ -79,7 +99,8 @@ def display_result(result: object, semantic: bool) -> None:
     page = getattr(result, "page")
     with st.container(border=True):
         st.markdown(f"#### {title}")
-        details = f"**{doc_id}** · Page {page}"
+        location = f"Page {page}" if str(page) != "Web" else "Location: Web page"
+        details = f"**{doc_id}** · {location}"
         if semantic:
             details += (
                 f" · Chunk {getattr(result, 'chunk_id')}"
@@ -100,7 +121,7 @@ def search_tab() -> None:
     result_count = control_col2.selectbox("Number of results", [3, 5, 10], index=1)
 
     if not query.strip():
-        st.info("Enter a query to search the five-document corpus.")
+        st.info("Enter a query to search the conservation corpus.")
         return
 
     semantic = search_mode == "Semantic Search"
@@ -124,7 +145,7 @@ def search_tab() -> None:
 
 
 st.title("Conservation Document Intelligence Prototype")
-st.caption("Milestone 2B · DOC001-DOC005 · Local retrieval prototype")
+st.caption("Milestone 2D · DOC001–DOC035 · Local retrieval prototype")
 
 corpus, search = st.tabs(["Corpus", "Search"])
 with corpus:

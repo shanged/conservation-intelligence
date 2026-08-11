@@ -4,3 +4,4 @@ pandas
 streamlit
 sentence-transformers
 chromadb
+beautifulsoup4
