@@ -1,8 +1,9 @@
-"""Streamlit Corpus and Search interface for the expanded Milestone 2D corpus."""
+"""Streamlit interface for the conservation document intelligence prototype."""
 
 from __future__ import annotations
 
 import sys
+import json
 from pathlib import Path
 
 import pandas as pd
@@ -21,6 +22,7 @@ from semantic_search import (  # noqa: E402
     VectorIndexNotFoundError,
     semantic_search,
 )
+from chatbot import answer_question  # noqa: E402
 
 
 st.set_page_config(
@@ -144,11 +146,112 @@ def search_tab() -> None:
         display_result(result, semantic)
 
 
-st.title("Conservation Document Intelligence Prototype")
-st.caption("Milestone 2D · DOC001–DOC035 · Local retrieval prototype")
+def wiki_tab() -> None:
+    """Browse persistent, evidence-backed Markdown wiki pages."""
+    if not DATABASE_PATH.exists():
+        st.info("Build the project database before browsing wiki pages.")
+        return
+    import sqlite3
+    try:
+        with sqlite3.connect(DATABASE_PATH) as connection:
+            pages = pd.read_sql_query(
+                "SELECT title, entity_type, file_path FROM wiki_pages ORDER BY entity_type, title",
+                connection,
+            )
+    except Exception:
+        st.info("Run scripts/06_generate_wiki.py to generate wiki pages.")
+        return
+    if pages.empty:
+        st.info("No wiki pages have been generated yet.")
+        return
+    kinds = sorted(pages["entity_type"].unique())
+    kind = st.selectbox("Entity type", kinds, key="wiki_entity_type")
+    choices = pages[pages["entity_type"] == kind]
+    title = st.selectbox("Entity", choices["title"].tolist(), key="wiki_entity")
+    relative = choices.loc[choices["title"] == title, "file_path"].iloc[0]
+    path = PROJECT_ROOT / relative
+    if not path.exists():
+        st.warning(f"Wiki file is missing: {relative}")
+        return
+    st.markdown(path.read_text(encoding="utf-8"))
 
-corpus, search = st.tabs(["Corpus", "Search"])
+
+def render_chat_response(response: dict[str, object]) -> None:
+    """Display an answer and its inspectable source evidence."""
+    st.markdown(str(response["answer"]))
+    evidence = response.get("evidence", [])
+    with st.expander(f"Sources ({len(evidence)})"):
+        for item in evidence:
+            location = "Web" if item["page"] == "Web" else f"page {item['page']}"
+            st.markdown(f"**{item['title']}** — {item['doc_id']}, {location}")
+            st.write(item["snippet"])
+            st.markdown(f"[Open source document]({item['source_url']})")
+
+
+def chatbot_tab() -> None:
+    """Run the no-API citation chatbot with session-local history."""
+    st.caption("Answers are composed only from retrieved corpus evidence. No API key is required.")
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
+    for message in st.session_state.chat_history:
+        with st.chat_message(message["role"]):
+            if message["role"] == "assistant":
+                render_chat_response(message["response"])
+            else:
+                st.markdown(message["content"])
+    prompt = st.chat_input("Ask a question about the conservation corpus")
+    if prompt:
+        st.session_state.chat_history.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
+        with st.chat_message("assistant"):
+            try:
+                response = answer_question(prompt).to_dict()
+                render_chat_response(response)
+            except VectorIndexNotFoundError as exc:
+                response = {"answer": str(exc), "evidence": [], "citations": [], "insufficient": True}
+                st.warning(str(exc))
+            except Exception as exc:
+                response = {"answer": f"The question could not be processed: {exc}", "evidence": [], "citations": [], "insufficient": True}
+                st.error(response["answer"])
+        st.session_state.chat_history.append({"role": "assistant", "response": response})
+
+
+def evaluation_tab() -> None:
+    """Display deterministic automated evaluation results."""
+    path = PROJECT_ROOT / "outputs" / "demo_answers.json"
+    if not path.exists():
+        st.info("Run scripts/07_run_evaluation.py to generate evaluation results.")
+        return
+    try:
+        records = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        st.error(f"Evaluation output could not be read: {exc}")
+        return
+    passed = sum(record["status"] == "PASS" for record in records)
+    st.metric("Automated heuristic checks", f"{passed}/{len(records)} passed")
+    st.caption("These are integrity checks, not human judgments of answer quality.")
+    for record in records:
+        with st.expander(f"{record['number']}. {record['status']} — {record['question']}"):
+            st.markdown(record["answer"])
+            st.markdown("**Notes**")
+            for note in record["notes"]:
+                st.write(f"- {note}")
+
+
+st.title("Conservation Document Intelligence Prototype")
+st.caption("DOC001–DOC035 · Local, citation-grounded document intelligence")
+
+corpus, search, wiki, chatbot, evaluation = st.tabs(
+    ["Corpus", "Search", "Wiki", "Chatbot", "Evaluation"]
+)
 with corpus:
     corpus_tab()
 with search:
     search_tab()
+with wiki:
+    wiki_tab()
+with chatbot:
+    chatbot_tab()
+with evaluation:
+    evaluation_tab()

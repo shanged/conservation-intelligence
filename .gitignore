@@ -38,3 +38,5 @@ db/vector_index/*
 outputs/*
 !outputs/entities.csv
 !outputs/relations.csv
+!outputs/demo_answers.md
+!outputs/demo_answers.json
