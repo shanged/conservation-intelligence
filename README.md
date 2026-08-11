@@ -11,7 +11,7 @@ The current prototype covers `DOC001` through `DOC005` and provides:
 - a downloader that saves source PDFs locally;
 - text extraction with page markers;
 - overlapping, page-aware chunks stored in SQLite;
-- literal keyword and local semantic search; and
+- literal keyword and local semantic search over MiniLM-sized windows; and
 - Streamlit Corpus and Search tabs.
 
 Entity and relationship extraction, wiki generation, and chatbot features are intentionally deferred.

@@ -81,7 +81,10 @@ def display_result(result: object, semantic: bool) -> None:
         st.markdown(f"#### {title}")
         details = f"**{doc_id}** · Page {page}"
         if semantic:
-            details += f" · Similarity {getattr(result, 'similarity'):.3f}"
+            details += (
+                f" · Chunk {getattr(result, 'chunk_id')}"
+                f" · Similarity {getattr(result, 'similarity'):.3f}"
+            )
         st.markdown(details)
         st.write(getattr(result, "text_snippet"))
         st.markdown(f"[Open source document]({getattr(result, 'source_url')})")

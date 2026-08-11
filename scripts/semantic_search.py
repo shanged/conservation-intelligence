@@ -37,6 +37,8 @@ class SemanticSearchResult:
     page: str
     source_url: str
     chunk_text: str
+    embedding_window_id: str
+    window_text: str
     text_snippet: str
     distance: float
     similarity: float
@@ -52,14 +54,16 @@ def load_model() -> SentenceTransformer:
     )
 
 
-def document_titles(database_path: Path) -> dict[str, str]:
-    """Load normalized document titles from SQLite."""
+def sqlite_records(database_path: Path) -> tuple[dict[str, str], dict[str, str]]:
+    """Load normalized titles and original chunk text from SQLite."""
     if not database_path.exists():
         raise VectorIndexNotFoundError(
             f"SQLite database not found: {database_path}. Run 03_build_chunks.py first."
         )
     with sqlite3.connect(database_path) as connection:
-        return dict(connection.execute("SELECT doc_id, title FROM documents").fetchall())
+        titles = dict(connection.execute("SELECT doc_id, title FROM documents").fetchall())
+        chunks = dict(connection.execute("SELECT chunk_id, chunk_text FROM chunks").fetchall())
+    return titles, chunks
 
 
 def semantic_search(
@@ -97,34 +101,63 @@ def semantic_search(
     query_embedding = load_model().encode(
         [query], normalize_embeddings=True, show_progress_bar=False
     ).tolist()
-    response = collection.query(
-        query_embeddings=query_embedding,
-        n_results=min(top_k, available),
-        include=["documents", "metadatas", "distances"],
-    )
-    titles = document_titles(database_path)
+    titles, original_chunks = sqlite_records(database_path)
 
-    ids = response["ids"][0]
-    documents = response["documents"][0]
-    metadatas = response["metadatas"][0]
-    distances = response["distances"][0]
+    # Over-fetch windows and expand if necessary until enough unique original
+    # chunks are represented. Only the best-scoring window survives per chunk.
+    request_count = min(available, max(50, top_k * 10))
+    grouped: dict[str, tuple[str, str, dict[str, object], float]] = {}
+    while True:
+        response = collection.query(
+            query_embeddings=query_embedding,
+            n_results=request_count,
+            include=["documents", "metadatas", "distances"],
+        )
+        grouped.clear()
+        for window_id, window_text, metadata, distance in zip(
+            response["ids"][0],
+            response["documents"][0],
+            response["metadatas"][0],
+            response["distances"][0],
+            strict=True,
+        ):
+            original_chunk_id = metadata.get("original_chunk_id")
+            if not original_chunk_id:
+                raise VectorIndexNotFoundError(
+                    "Semantic index uses the old whole-chunk format. "
+                    "Run scripts/04_build_vector_index.py to rebuild it."
+                )
+            original_chunk_id = str(original_chunk_id)
+            numeric_distance = float(distance)
+            current = grouped.get(original_chunk_id)
+            if current is None or numeric_distance < current[3]:
+                grouped[original_chunk_id] = (
+                    window_id,
+                    window_text,
+                    metadata,
+                    numeric_distance,
+                )
+        if len(grouped) >= top_k or request_count == available:
+            break
+        request_count = min(available, request_count * 2)
+
+    ranked = sorted(grouped.items(), key=lambda item: item[1][3])[:top_k]
     results: list[SemanticSearchResult] = []
-    for chunk_id, text, metadata, distance in zip(
-        ids, documents, metadatas, distances, strict=True
-    ):
+    for original_chunk_id, (window_id, window_text, metadata, distance) in ranked:
         doc_id = str(metadata["doc_id"])
-        numeric_distance = float(distance)
         results.append(
             SemanticSearchResult(
-                chunk_id=chunk_id,
+                chunk_id=original_chunk_id,
                 doc_id=doc_id,
                 title=titles.get(doc_id, doc_id),
                 page=str(metadata["page"]),
                 source_url=str(metadata["source_url"]),
-                chunk_text=text,
-                text_snippet=make_snippet(text, query),
-                distance=numeric_distance,
-                similarity=1.0 - numeric_distance,
+                chunk_text=original_chunks.get(original_chunk_id, window_text),
+                embedding_window_id=window_id,
+                window_text=window_text,
+                text_snippet=make_snippet(window_text, query),
+                distance=distance,
+                similarity=1.0 - distance,
             )
         )
     return results
@@ -153,6 +186,7 @@ def main() -> int:
     for index, result in enumerate(results, start=1):
         print(
             f"{index}. {result.doc_id} | {result.title} | page {result.page} | "
+            f"{result.chunk_id} | "
             f"similarity {result.similarity:.4f}\n"
             f"   {result.text_snippet}\n"
             f"   {result.source_url}"
