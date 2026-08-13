@@ -12,15 +12,11 @@ from pathlib import Path
 import chromadb
 from sentence_transformers import SentenceTransformer
 
+from runtime_artifacts import DATABASE_PATH, MODEL_PATH, VECTOR_INDEX_DIR
 from search_chunks import make_snippet
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DATABASE_PATH = PROJECT_ROOT / "db" / "conservation.db"
-VECTOR_INDEX_DIR = PROJECT_ROOT / "db" / "vector_index"
-MODEL_CACHE_DIR = VECTOR_INDEX_DIR / "model_cache"
 COLLECTION_NAME = "conservation_chunks"
-MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
 
 class VectorIndexNotFoundError(RuntimeError):
@@ -48,8 +44,7 @@ class SemanticSearchResult:
 def load_model() -> SentenceTransformer:
     """Load the local embedding model once per Python process."""
     return SentenceTransformer(
-        MODEL_NAME,
-        cache_folder=str(MODEL_CACHE_DIR),
+        str(MODEL_PATH),
         local_files_only=True,
     )
 
@@ -58,7 +53,7 @@ def sqlite_records(database_path: Path) -> tuple[dict[str, str], dict[str, str]]
     """Load normalized titles and original chunk text from SQLite."""
     if not database_path.exists():
         raise VectorIndexNotFoundError(
-            f"SQLite database not found: {database_path}. Run 03_build_chunks.py first."
+            f"Precomputed SQLite database not found: {database_path}."
         )
     with sqlite3.connect(database_path) as connection:
         titles = dict(connection.execute("SELECT doc_id, title FROM documents").fetchall())
@@ -84,7 +79,7 @@ def semantic_search(
     vector_index_dir = Path(vector_index_dir)
     if not (vector_index_dir / "chroma.sqlite3").exists():
         raise VectorIndexNotFoundError(
-            "Semantic index not found. Run scripts/04_build_vector_index.py first."
+            f"Precomputed semantic index not found: {vector_index_dir}."
         )
 
     client = chromadb.PersistentClient(path=str(vector_index_dir))
@@ -92,7 +87,7 @@ def semantic_search(
         collection = client.get_collection(COLLECTION_NAME)
     except Exception as exc:
         raise VectorIndexNotFoundError(
-            "Semantic collection not found. Run scripts/04_build_vector_index.py first."
+            f"Precomputed semantic collection is unavailable in: {vector_index_dir}."
         ) from exc
 
     available = collection.count()
@@ -124,8 +119,7 @@ def semantic_search(
             original_chunk_id = metadata.get("original_chunk_id")
             if not original_chunk_id:
                 raise VectorIndexNotFoundError(
-                    "Semantic index uses the old whole-chunk format. "
-                    "Run scripts/04_build_vector_index.py to rebuild it."
+                    "The packaged semantic index uses an incompatible whole-chunk format."
                 )
             original_chunk_id = str(original_chunk_id)
             numeric_distance = float(distance)

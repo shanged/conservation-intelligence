@@ -13,11 +13,11 @@ from collections import defaultdict
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+from runtime_artifacts import DATABASE_PATH, WIKI_ROOT
 from semantic_search import VectorIndexNotFoundError, semantic_search
 
 ROOT = Path(__file__).resolve().parents[1]
-DATABASE = ROOT / "db" / "conservation.db"
-WIKI_ROOT = ROOT / "wiki"
+DATABASE = DATABASE_PATH
 STOPWORDS = {"the", "a", "an", "and", "or", "of", "to", "in", "for", "what", "which", "are", "is", "do", "does", "how", "across", "public", "documents", "document", "mention", "discuss", "evidence", "corpus", "provide", "about"}
 SUMMARY_WORDS = {"generate", "short", "cited", "summary", "summarize"}
 SUMMARY_THEMES = (

@@ -8,9 +8,10 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from runtime_artifacts import DATABASE_PATH
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_DATABASE_PATH = PROJECT_ROOT / "db" / "conservation.db"
+
+DEFAULT_DATABASE_PATH = DATABASE_PATH
 
 
 @dataclass(frozen=True)

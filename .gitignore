@@ -26,9 +26,16 @@ dist/
 .vscode/
 .DS_Store
 Thumbs.db
+*.log
 
 # Streamlit local settings
 .streamlit/secrets.toml
+
+# Transient database sidecars must never become deployment artifacts
+*.db-wal
+*.db-shm
+*.sqlite3-wal
+*.sqlite3-shm
 
 # Generated corpus and application artifacts
 data/raw/*
@@ -40,3 +47,4 @@ outputs/*
 !outputs/relations.csv
 !outputs/demo_answers.md
 !outputs/demo_answers.json
+!outputs/pre_openai_baseline.md

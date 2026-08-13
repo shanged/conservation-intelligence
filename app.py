@@ -11,12 +11,16 @@ import streamlit as st
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
-METADATA_PATH = PROJECT_ROOT / "data" / "metadata.csv"
-DATABASE_PATH = PROJECT_ROOT / "db" / "conservation.db"
 SCRIPTS_DIR = PROJECT_ROOT / "scripts"
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
+from runtime_artifacts import (  # noqa: E402
+    DATABASE_PATH,
+    EVALUATION_PATH,
+    METADATA_PATH,
+    runtime_configuration_error,
+)
 from search_chunks import search_chunks  # noqa: E402
 
 
@@ -25,6 +29,11 @@ st.set_page_config(
     page_icon="🌿",
     layout="wide",
 )
+
+configuration_error = runtime_configuration_error()
+if configuration_error:
+    st.error(configuration_error)
+    st.stop()
 
 
 @st.cache_data
@@ -228,7 +237,7 @@ def chatbot_tab() -> None:
 
 def evaluation_tab() -> None:
     """Display deterministic automated evaluation results."""
-    path = PROJECT_ROOT / "outputs" / "demo_answers.json"
+    path = EVALUATION_PATH
     if not path.exists():
         st.info("Run scripts/07_run_evaluation.py to generate evaluation results.")
         return
