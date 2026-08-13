@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import argparse
-import sqlite3
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 from runtime_artifacts import DATABASE_PATH
+from sqlite_readonly import connect_readonly
 
 
 DEFAULT_DATABASE_PATH = DATABASE_PATH
@@ -52,7 +52,7 @@ def search_chunks(
     if limit < 1:
         raise ValueError("limit must be at least 1")
 
-    with sqlite3.connect(database_path) as connection:
+    with connect_readonly(database_path) as connection:
         rows = connection.execute(
             """
             SELECT c.doc_id, d.title, c.page, c.chunk_text, c.source_url

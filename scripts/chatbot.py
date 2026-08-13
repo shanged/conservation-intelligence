@@ -8,13 +8,13 @@ No paid API, credential, or network call is required.
 from __future__ import annotations
 
 import re
-import sqlite3
 from collections import defaultdict
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from runtime_artifacts import DATABASE_PATH, WIKI_ROOT
 from semantic_search import VectorIndexNotFoundError, semantic_search
+from sqlite_readonly import connect_readonly
 
 ROOT = Path(__file__).resolve().parents[1]
 DATABASE = DATABASE_PATH
@@ -187,7 +187,7 @@ def thematic_summary(query: str) -> tuple[str, list[Evidence]]:
 
 
 def entity_rank(entity_type: str, limit: int) -> list[tuple[str, int, int, Evidence]]:
-    with sqlite3.connect(DATABASE) as connection:
+    with connect_readonly(DATABASE) as connection:
         rows = connection.execute(
             """SELECT e.name, COUNT(*) occurrences, COUNT(DISTINCT e.doc_id) docs,
                       e.doc_id, d.title, e.page, c.source_url, e.evidence, e.chunk_id
@@ -200,7 +200,7 @@ def entity_rank(entity_type: str, limit: int) -> list[tuple[str, int, int, Evide
 
 
 def entity_evidence(name: str) -> Evidence | None:
-    with sqlite3.connect(DATABASE) as connection:
+    with connect_readonly(DATABASE) as connection:
         row = connection.execute(
             """SELECT d.title,e.doc_id,e.page,c.source_url,e.evidence,e.chunk_id
                FROM entities e JOIN chunks c ON c.chunk_id=e.chunk_id JOIN documents d ON d.doc_id=e.doc_id
@@ -234,7 +234,7 @@ def document_answer(lead: str, evidence: list[Evidence]) -> str:
 
 
 def wiki_inventory() -> tuple[str, list[Evidence]]:
-    with sqlite3.connect(DATABASE) as connection:
+    with connect_readonly(DATABASE) as connection:
         rows = connection.execute("SELECT title,entity_type FROM wiki_pages ORDER BY entity_type,title").fetchall()
     grouped: dict[str, list[str]] = defaultdict(list); support = []
     for title, kind in rows:
@@ -279,7 +279,7 @@ def answer_question(query: str, evidence_limit: int = 7) -> ChatResponse:
         answer = "The current evidence leaves several recurring questions open:\n" + "\n".join(questions)
     elif "relationship between invasive carp" in lower:
         evidence = semantic
-        with sqlite3.connect(DATABASE) as connection:
+        with connect_readonly(DATABASE) as connection:
             direct = connection.execute("SELECT COUNT(*) FROM relations WHERE relation='species_uses_habitat' AND LOWER(subject)='invasive carp'").fetchone()[0]
         if not sufficient(query, evidence):
             return ChatResponse("The corpus does not provide enough evidence to answer this relationship question.", (), tuple(evidence), True)
@@ -309,7 +309,7 @@ def validate_response(response: ChatResponse) -> tuple[bool, list[str]]:
     if not response.evidence and not response.insufficient: notes.append("retrieved evidence is empty")
     citations = re.findall(r"\[(DOC\d{3}), (Web|p\. \d+|pp\. \d+–\d+)\]", response.answer)
     if response.evidence and not response.insufficient and not citations: notes.append("answer has evidence but no citation")
-    with sqlite3.connect(DATABASE) as connection:
+    with connect_readonly(DATABASE) as connection:
         docs = {r[0] for r in connection.execute("SELECT doc_id FROM documents")}
         locations = set(connection.execute("SELECT doc_id,page FROM chunks"))
     for doc_id, label in citations:

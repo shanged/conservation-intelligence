@@ -105,7 +105,7 @@ five to eight evidence items, and exposes every used title, document ID,
 location, URL, and snippet. Citations are validated against SQLite document and
 chunk metadata during evaluation.
 
-## No-API fallback
+## Optional OpenAI configuration and deterministic fallback
 
 No OpenAI key, paid service, or external LLM is required. The default chatbot
 is deterministic and extractive: it selects relevant sentences from retrieved
@@ -113,8 +113,48 @@ chunks, adds structured entity/relation evidence for aggregate questions, and
 refuses to answer when relevance and lexical-support checks indicate that the
 corpus evidence is insufficient.
 
-No optional external-API path is currently enabled, so there are no API
-environment variables or credentials to configure.
+Optional OpenAI synthesis uses the Responses API only after the existing local
+MiniLM/Chroma pipeline retrieves and filters a bounded evidence set. The model
+receives the current question and approximately five to eight strong excerpts,
+identified as `E1` through `E8`; it receives neither full documents nor chat
+history. Model evidence references are validated and mapped to the existing
+local document/page citations before display. Retrieved text is explicitly
+treated as untrusted data, and tools, web search, browsing, code execution, and
+response storage are disabled.
+
+`USE_OPENAI_CHATBOT` defaults to `false`. The existing deterministic chatbot
+remains the fallback when OpenAI is disabled, unavailable, misconfigured, times
+out, raises any request error, or returns empty, malformed, unsafe, or unknown
+evidence references. No OpenAI client is constructed while the feature is
+disabled.
+
+For local development, copy `.env.example` to an ignored `.env` file and add a
+key only on the developer machine. The application does not currently load
+`.env` automatically; export the variables into the server process if testing
+configuration. Never commit `.env` or `.streamlit/secrets.toml`. A future
+Hugging Face deployment will store `OPENAI_API_KEY` in Hugging Face Secrets,
+not in source code, build arguments, or image layers. Users must never be asked
+to enter an API key through the application UI.
+
+Supported variables are `OPENAI_API_KEY`, `USE_OPENAI_CHATBOT`, `OPENAI_MODEL`,
+`OPENAI_MAX_OUTPUT_TOKENS`, `OPENAI_REQUEST_TIMEOUT_SECONDS`, and
+`OPENAI_MAX_RETRIES`. See `.env.example` for safe non-secret defaults.
+
+### One future manual API smoke test (do not run during automated validation)
+
+1. Outside Codex, place one real key in the ignored local `.env` file, confirm
+   `git check-ignore .env`, and load those values into the Streamlit server
+   process without printing them. Alternatively, configure the same variables
+   as private Hugging Face Space Secrets when deployment is eventually allowed.
+2. Set `USE_OPENAI_CHATBOT=true`, keep `OPENAI_MAX_RETRIES=0`, and retain the
+   conservative token and timeout limits from `.env.example`.
+3. Start Streamlit locally, ask one known demo question, and confirm a grounded
+   answer with locally rendered `DOC` citations. Check only sanitized status;
+   never log request headers, environment values, or SDK exception payloads.
+4. Stop the server, disable OpenAI mode, and remove the key from the process.
+
+This is preparation only; the Step 4 validation suite uses fake clients and
+credentials and makes no network request.
 
 ## Evaluation
 

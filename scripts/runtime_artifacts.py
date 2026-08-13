@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import os
+import shutil
+import tempfile
+import threading
 from pathlib import Path
 
 
@@ -10,6 +13,13 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEPLOYMENT_ARTIFACT_ROOT = PROJECT_ROOT / "deployment_artifacts"
 LOCAL_ARTIFACT_ROOT = PROJECT_ROOT
 ARTIFACT_ROOT_ENV = "CONSERVATION_ARTIFACT_ROOT"
+_runtime_index_lock = threading.Lock()
+_runtime_index_temp: tempfile.TemporaryDirectory[str] | None = None
+_runtime_index_path: Path | None = None
+
+
+class RuntimeArtifactPreparationError(RuntimeError):
+    """Raised when an immutable artifact cannot be isolated for runtime use."""
 
 
 def _local_model_path() -> Path:
@@ -85,3 +95,48 @@ def runtime_configuration_error() -> str | None:
         "will not rebuild them automatically. Configure "
         f"{ARTIFACT_ROOT_ENV} to a complete artifact package or restore:\n{paths}"
     )
+
+
+def _create_disposable_vector_index(
+    source: Path,
+) -> tuple[tempfile.TemporaryDirectory[str], Path]:
+    """Copy Chroma data to process-scoped writable storage, excluding caches."""
+    temporary: tempfile.TemporaryDirectory[str] | None = None
+    try:
+        temporary = tempfile.TemporaryDirectory(prefix="conservation-chroma-")
+        destination = Path(temporary.name) / "vector_index"
+        shutil.copytree(
+            source,
+            destination,
+            ignore=shutil.ignore_patterns(
+                "model_cache",
+                "*.lock",
+                "*.db-wal",
+                "*.db-shm",
+                "*.sqlite3-wal",
+                "*.sqlite3-shm",
+            ),
+        )
+        if not (destination / "chroma.sqlite3").is_file():
+            raise FileNotFoundError("copied Chroma database is missing")
+        return temporary, destination
+    except Exception:
+        if temporary is not None:
+            temporary.cleanup()
+        raise RuntimeArtifactPreparationError(
+            "Unable to prepare the disposable semantic-index runtime copy. "
+            "The packaged index was not modified and will not be rebuilt automatically."
+        ) from None
+
+
+def runtime_vector_index_dir() -> Path:
+    """Return a cached writable copy used for Chroma's query-time bookkeeping."""
+    global _runtime_index_path, _runtime_index_temp
+    if _runtime_index_path is not None:
+        return _runtime_index_path
+    with _runtime_index_lock:
+        if _runtime_index_path is None:
+            temporary, destination = _create_disposable_vector_index(VECTOR_INDEX_DIR)
+            _runtime_index_temp = temporary
+            _runtime_index_path = destination
+    return _runtime_index_path

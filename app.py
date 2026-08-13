@@ -79,10 +79,11 @@ def corpus_tab() -> None:
 
     # Milestone 3A diagnostic only; a full Wiki UI is deliberately deferred.
     if DATABASE_PATH.exists():
-        import sqlite3
         with st.expander("Entity extraction diagnostics"):
             try:
-                with sqlite3.connect(DATABASE_PATH) as connection:
+                from sqlite_readonly import connect_readonly
+
+                with connect_readonly(DATABASE_PATH) as connection:
                     entity_counts = pd.read_sql_query(
                         "SELECT entity_type, COUNT(*) AS count FROM entities GROUP BY entity_type ORDER BY entity_type",
                         connection,
@@ -164,9 +165,10 @@ def wiki_tab() -> None:
     if not DATABASE_PATH.exists():
         st.info("Build the project database before browsing wiki pages.")
         return
-    import sqlite3
     try:
-        with sqlite3.connect(DATABASE_PATH) as connection:
+        from sqlite_readonly import connect_readonly
+
+        with connect_readonly(DATABASE_PATH) as connection:
             pages = pd.read_sql_query(
                 "SELECT title, entity_type, file_path FROM wiki_pages ORDER BY entity_type, title",
                 connection,
@@ -202,8 +204,8 @@ def render_chat_response(response: dict[str, object]) -> None:
 
 
 def chatbot_tab() -> None:
-    """Run the no-API citation chatbot with session-local history."""
-    st.caption("Answers are composed only from retrieved corpus evidence. No API key is required.")
+    """Run optional synthesis with deterministic fallback and local history."""
+    st.caption("Answers use retrieved corpus evidence; local deterministic fallback requires no API key.")
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
     for message in st.session_state.chat_history:
@@ -222,9 +224,9 @@ def chatbot_tab() -> None:
                 # The chatbot uses semantic retrieval, so load it only after a
                 # question is submitted rather than during the initial render.
                 from semantic_search import VectorIndexNotFoundError
-                from chatbot import answer_question
+                from openai_chatbot import answer_question_hybrid
 
-                response = answer_question(prompt).to_dict()
+                response = answer_question_hybrid(prompt).to_dict()
                 render_chat_response(response)
             except VectorIndexNotFoundError as exc:
                 response = {"answer": str(exc), "evidence": [], "citations": [], "insufficient": True}

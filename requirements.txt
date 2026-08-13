@@ -5,3 +5,4 @@ streamlit
 sentence-transformers
 chromadb
 beautifulsoup4
+openai==2.54.0

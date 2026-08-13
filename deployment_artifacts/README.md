@@ -16,6 +16,14 @@ environments, secrets, lock files, and Hugging Face cache bookkeeping. The
 model directory is a standalone model snapshot required for offline query
 embedding, not a general-purpose cache.
 
+At runtime, `scripts/runtime_artifacts.py` copies only the Chroma index into a
+process-scoped directory created with Python's cross-platform temporary-file
+support. Chroma queries use that disposable writable copy because Chroma's
+persistent client performs internal write-lock bookkeeping even for queries.
+The canonical package is never passed to Chroma. Runtime reads of
+`conservation.db` use immutable SQLite read-only connections, while the offline
+build scripts retain their existing writable local database behavior.
+
 `MANIFEST.sha256` records the packaged binary/model file checksums. From this
 directory, verify it with a SHA-256 checksum tool before publishing or after
 transferring the package.

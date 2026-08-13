@@ -27,6 +27,8 @@ dist/
 .DS_Store
 Thumbs.db
 *.log
+streamlit.stdout.log
+streamlit.stderr.log
 
 # Streamlit local settings
 .streamlit/secrets.toml

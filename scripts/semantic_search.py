@@ -3,17 +3,23 @@
 from __future__ import annotations
 
 import argparse
-import sqlite3
 import sys
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
 import chromadb
+from chromadb.config import Settings
 from sentence_transformers import SentenceTransformer
 
-from runtime_artifacts import DATABASE_PATH, MODEL_PATH, VECTOR_INDEX_DIR
+from runtime_artifacts import (
+    DATABASE_PATH,
+    MODEL_PATH,
+    RuntimeArtifactPreparationError,
+    runtime_vector_index_dir,
+)
 from search_chunks import make_snippet
+from sqlite_readonly import connect_readonly
 
 
 COLLECTION_NAME = "conservation_chunks"
@@ -55,7 +61,7 @@ def sqlite_records(database_path: Path) -> tuple[dict[str, str], dict[str, str]]
         raise VectorIndexNotFoundError(
             f"Precomputed SQLite database not found: {database_path}."
         )
-    with sqlite3.connect(database_path) as connection:
+    with connect_readonly(database_path) as connection:
         titles = dict(connection.execute("SELECT doc_id, title FROM documents").fetchall())
         chunks = dict(connection.execute("SELECT chunk_id, chunk_text FROM chunks").fetchall())
     return titles, chunks
@@ -66,7 +72,7 @@ def semantic_search(
     top_k: int = 5,
     *,
     database_path: str | Path = DATABASE_PATH,
-    vector_index_dir: str | Path = VECTOR_INDEX_DIR,
+    vector_index_dir: str | Path | None = None,
 ) -> list[SemanticSearchResult]:
     """Embed a query and return the nearest Chroma chunks by cosine distance."""
     query = query.strip()
@@ -76,64 +82,70 @@ def semantic_search(
         raise ValueError("top_k must be at least 1")
 
     database_path = Path(database_path)
+    if vector_index_dir is None:
+        try:
+            vector_index_dir = runtime_vector_index_dir()
+        except RuntimeArtifactPreparationError as exc:
+            raise VectorIndexNotFoundError(str(exc)) from None
     vector_index_dir = Path(vector_index_dir)
     if not (vector_index_dir / "chroma.sqlite3").exists():
         raise VectorIndexNotFoundError(
             f"Precomputed semantic index not found: {vector_index_dir}."
         )
 
-    client = chromadb.PersistentClient(path=str(vector_index_dir))
-    try:
-        collection = client.get_collection(COLLECTION_NAME)
-    except Exception as exc:
-        raise VectorIndexNotFoundError(
-            f"Precomputed semantic collection is unavailable in: {vector_index_dir}."
-        ) from exc
+    settings = Settings(anonymized_telemetry=False, migrations="validate")
+    with chromadb.PersistentClient(path=str(vector_index_dir), settings=settings) as client:
+        try:
+            collection = client.get_collection(COLLECTION_NAME)
+        except Exception as exc:
+            raise VectorIndexNotFoundError(
+                "The precomputed semantic collection is unavailable in the runtime copy."
+            ) from exc
 
-    available = collection.count()
-    if available == 0:
-        return []
-    query_embedding = load_model().encode(
-        [query], normalize_embeddings=True, show_progress_bar=False
-    ).tolist()
-    titles, original_chunks = sqlite_records(database_path)
+        available = collection.count()
+        if available == 0:
+            return []
+        query_embedding = load_model().encode(
+            [query], normalize_embeddings=True, show_progress_bar=False
+        ).tolist()
+        titles, original_chunks = sqlite_records(database_path)
 
-    # Over-fetch windows and expand if necessary until enough unique original
-    # chunks are represented. Only the best-scoring window survives per chunk.
-    request_count = min(available, max(50, top_k * 10))
-    grouped: dict[str, tuple[str, str, dict[str, object], float]] = {}
-    while True:
-        response = collection.query(
-            query_embeddings=query_embedding,
-            n_results=request_count,
-            include=["documents", "metadatas", "distances"],
-        )
-        grouped.clear()
-        for window_id, window_text, metadata, distance in zip(
-            response["ids"][0],
-            response["documents"][0],
-            response["metadatas"][0],
-            response["distances"][0],
-            strict=True,
-        ):
-            original_chunk_id = metadata.get("original_chunk_id")
-            if not original_chunk_id:
-                raise VectorIndexNotFoundError(
-                    "The packaged semantic index uses an incompatible whole-chunk format."
-                )
-            original_chunk_id = str(original_chunk_id)
-            numeric_distance = float(distance)
-            current = grouped.get(original_chunk_id)
-            if current is None or numeric_distance < current[3]:
-                grouped[original_chunk_id] = (
-                    window_id,
-                    window_text,
-                    metadata,
-                    numeric_distance,
-                )
-        if len(grouped) >= top_k or request_count == available:
-            break
-        request_count = min(available, request_count * 2)
+        # Over-fetch windows and expand if necessary until enough unique original
+        # chunks are represented. Only the best-scoring window survives per chunk.
+        request_count = min(available, max(50, top_k * 10))
+        grouped: dict[str, tuple[str, str, dict[str, object], float]] = {}
+        while True:
+            response = collection.query(
+                query_embeddings=query_embedding,
+                n_results=request_count,
+                include=["documents", "metadatas", "distances"],
+            )
+            grouped.clear()
+            for window_id, window_text, metadata, distance in zip(
+                response["ids"][0],
+                response["documents"][0],
+                response["metadatas"][0],
+                response["distances"][0],
+                strict=True,
+            ):
+                original_chunk_id = metadata.get("original_chunk_id")
+                if not original_chunk_id:
+                    raise VectorIndexNotFoundError(
+                        "The packaged semantic index uses an incompatible whole-chunk format."
+                    )
+                original_chunk_id = str(original_chunk_id)
+                numeric_distance = float(distance)
+                current = grouped.get(original_chunk_id)
+                if current is None or numeric_distance < current[3]:
+                    grouped[original_chunk_id] = (
+                        window_id,
+                        window_text,
+                        metadata,
+                        numeric_distance,
+                    )
+            if len(grouped) >= top_k or request_count == available:
+                break
+            request_count = min(available, request_count * 2)
 
     ranked = sorted(grouped.items(), key=lambda item: item[1][3])[:top_k]
     results: list[SemanticSearchResult] = []
