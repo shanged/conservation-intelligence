@@ -51,6 +51,11 @@ class RuntimeIntegrityTests(unittest.TestCase):
             "OPENAI_MAX_OUTPUT_TOKENS",
             "OPENAI_REQUEST_TIMEOUT_SECONDS",
             "OPENAI_MAX_RETRIES",
+            "OPENAI_MAX_QUESTION_CHARS",
+            "OPENAI_MAX_EVIDENCE_ITEMS",
+            "OPENAI_MAX_CONTEXT_CHARS",
+            "OPENAI_SESSION_REQUEST_QUOTA",
+            "OPENAI_REQUEST_COOLDOWN_SECONDS",
         ):
             environment.pop(name, None)
 

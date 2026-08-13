@@ -193,6 +193,8 @@ def wiki_tab() -> None:
 
 def render_chat_response(response: dict[str, object]) -> None:
     """Display an answer and its inspectable source evidence."""
+    if response.get("status_message"):
+        st.info(str(response["status_message"]))
     st.markdown(str(response["answer"]))
     evidence = response.get("evidence", [])
     with st.expander(f"Sources ({len(evidence)})"):
@@ -208,6 +210,10 @@ def chatbot_tab() -> None:
     st.caption("Answers use retrieved corpus evidence; local deterministic fallback requires no API key.")
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
+    if "openai_request_controls" not in st.session_state:
+        from request_controls import OpenAISessionState
+
+        st.session_state.openai_request_controls = OpenAISessionState()
     for message in st.session_state.chat_history:
         with st.chat_message(message["role"]):
             if message["role"] == "assistant":
@@ -225,14 +231,26 @@ def chatbot_tab() -> None:
                 # question is submitted rather than during the initial render.
                 from semantic_search import VectorIndexNotFoundError
                 from openai_chatbot import answer_question_hybrid
+                from request_controls import stable_request_id
 
-                response = answer_question_hybrid(prompt).to_dict()
+                response = answer_question_hybrid(
+                    prompt,
+                    session_state=st.session_state.openai_request_controls,
+                    request_id=stable_request_id(
+                        f"{len(st.session_state.chat_history)}:{prompt}"
+                    ),
+                ).to_dict()
+                diagnostics = response.get("diagnostics")
+                if diagnostics:
+                    usage = st.session_state.openai_request_controls.usage_diagnostics
+                    usage.append(diagnostics)
+                    del usage[:-50]
                 render_chat_response(response)
             except VectorIndexNotFoundError as exc:
                 response = {"answer": str(exc), "evidence": [], "citations": [], "insufficient": True}
                 st.warning(str(exc))
-            except Exception as exc:
-                response = {"answer": f"The question could not be processed: {exc}", "evidence": [], "citations": [], "insufficient": True}
+            except Exception:
+                response = {"answer": "The question could not be processed safely; please try again.", "evidence": [], "citations": [], "insufficient": True}
                 st.error(response["answer"])
         st.session_state.chat_history.append({"role": "assistant", "response": response})
 

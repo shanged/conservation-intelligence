@@ -122,6 +122,51 @@ local document/page citations before display. Retrieved text is explicitly
 treated as untrusted data, and tools, web search, browsing, code execution, and
 response storage are disabled.
 
+Citation integrity is enforced by `scripts/citation_validation.py`, not by the
+model. Each temporary evidence record contains its E-ID, chunk ID, document ID,
+stored title, page/Web location, stored source URL, exact excerpt, and semantic
+score. Every referenced record must match the immutable SQLite document and
+chunk rows, including document ownership, location, URL, title, and excerpt.
+Only then does local code replace inline E-IDs with final `DOC` citations and
+populate the Sources panel from validated local records.
+
+Answers with unknown or malformed E-IDs, uncited factual sentences, invented
+document/page/URL metadata, unsafe links, mismatched SQLite provenance, or a
+multi-document claim supported by only one document are rejected. Sources are
+deduplicated by document, location, and trusted URL. Multi-source and
+claim-association checks are intentionally conservative prose heuristics; they
+do not attempt general natural-language entailment.
+
+### Public-demo request controls
+
+Application-level controls use conservative defaults: questions are limited to
+750 normalized characters, at most 6 evidence items (hard ceiling 8) and 12,000
+combined request characters are sent, output is capped at 600 tokens, timeout
+is 20 seconds, and transient failures receive at most one retry. Authentication,
+invalid-request, safety/policy, configuration, and citation-validation failures
+are not retried.
+
+Each browser session receives 20 attempted OpenAI requests with a three-second
+cooldown. During quota, cooldown, or duplicate-rerun blocks, OpenAI is not
+called and the deterministic local answer is used with a short notice. Guards,
+quota counts, chat history, and bounded usage diagnostics live only in that
+Streamlit session; questions, answers, evidence, and diagnostics are not written
+to SQLite, JSON, logs, analytics, or other runtime files. Usage diagnostics
+contain only mode, latency, configured model, token counts when returned by the
+API, and a broad fallback reason.
+
+`USE_OPENAI_CHATBOT=false` is the immediate kill switch even when a key exists.
+These application safeguards do not replace OpenAI project budgets, usage
+alerts, rate limits, key restrictions, or billing controls, which must be
+configured separately on the server-side account.
+
+All limits are configurable with `OPENAI_MAX_QUESTION_CHARS`,
+`OPENAI_MAX_EVIDENCE_ITEMS`, `OPENAI_MAX_CONTEXT_CHARS`,
+`OPENAI_MAX_OUTPUT_TOKENS`, `OPENAI_REQUEST_TIMEOUT_SECONDS`,
+`OPENAI_MAX_RETRIES`, `OPENAI_SESSION_REQUEST_QUOTA`, and
+`OPENAI_REQUEST_COOLDOWN_SECONDS`. Invalid or out-of-range settings disable
+OpenAI synthesis and preserve deterministic fallback.
+
 `USE_OPENAI_CHATBOT` defaults to `false`. The existing deterministic chatbot
 remains the fallback when OpenAI is disabled, unavailable, misconfigured, times
 out, raises any request error, or returns empty, malformed, unsafe, or unknown

@@ -12,9 +12,19 @@ DEFAULT_MODEL = "gpt-5.6-luna"
 DEFAULT_MAX_OUTPUT_TOKENS = 600
 DEFAULT_REQUEST_TIMEOUT_SECONDS = 20.0
 DEFAULT_MAX_RETRIES = 1
+DEFAULT_MAX_QUESTION_CHARS = 750
+DEFAULT_MAX_EVIDENCE_ITEMS = 6
+HARD_MAX_EVIDENCE_ITEMS = 8
+DEFAULT_MAX_CONTEXT_CHARS = 12_000
+DEFAULT_SESSION_REQUEST_QUOTA = 20
+DEFAULT_REQUEST_COOLDOWN_SECONDS = 3.0
 MAX_OUTPUT_TOKENS_LIMIT = 2_000
 MAX_REQUEST_TIMEOUT_SECONDS = 60.0
 MAX_RETRIES_LIMIT = 1
+MAX_QUESTION_CHARS_LIMIT = 4_000
+MAX_CONTEXT_CHARS_LIMIT = 50_000
+MAX_SESSION_REQUEST_QUOTA = 100
+MAX_COOLDOWN_SECONDS = 60.0
 MODEL_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$")
 
 
@@ -27,6 +37,11 @@ class OpenAIConfig:
     max_output_tokens: int
     request_timeout_seconds: float
     max_retries: int
+    max_question_chars: int
+    max_evidence_items: int
+    max_context_chars: int
+    session_request_quota: int
+    request_cooldown_seconds: float
     errors: tuple[str, ...]
     _api_key: str | None = field(default=None, repr=False, compare=False)
 
@@ -53,6 +68,11 @@ class OpenAIConfig:
             "api_configured": self.api_configured,
             "model": self.model,
             "fallback_available": self.deterministic_fallback_available,
+            "max_question_chars": self.max_question_chars,
+            "max_evidence_items": self.max_evidence_items,
+            "max_context_chars": self.max_context_chars,
+            "session_request_quota": self.session_request_quota,
+            "request_cooldown_seconds": self.request_cooldown_seconds,
         }
 
     def safe_diagnostics(self) -> tuple[str, ...]:
@@ -147,6 +167,49 @@ def load_openai_config(environ: Mapping[str, str] | None = None) -> OpenAIConfig
         MAX_RETRIES_LIMIT,
         errors,
     )
+    max_question_chars = _parse_int(
+        "OPENAI_MAX_QUESTION_CHARS",
+        source.get("OPENAI_MAX_QUESTION_CHARS", str(DEFAULT_MAX_QUESTION_CHARS)),
+        DEFAULT_MAX_QUESTION_CHARS,
+        1,
+        MAX_QUESTION_CHARS_LIMIT,
+        errors,
+    )
+    max_evidence_items = _parse_int(
+        "OPENAI_MAX_EVIDENCE_ITEMS",
+        source.get("OPENAI_MAX_EVIDENCE_ITEMS", str(DEFAULT_MAX_EVIDENCE_ITEMS)),
+        DEFAULT_MAX_EVIDENCE_ITEMS,
+        1,
+        HARD_MAX_EVIDENCE_ITEMS,
+        errors,
+    )
+    max_context_chars = _parse_int(
+        "OPENAI_MAX_CONTEXT_CHARS",
+        source.get("OPENAI_MAX_CONTEXT_CHARS", str(DEFAULT_MAX_CONTEXT_CHARS)),
+        DEFAULT_MAX_CONTEXT_CHARS,
+        500,
+        MAX_CONTEXT_CHARS_LIMIT,
+        errors,
+    )
+    session_request_quota = _parse_int(
+        "OPENAI_SESSION_REQUEST_QUOTA",
+        source.get("OPENAI_SESSION_REQUEST_QUOTA", str(DEFAULT_SESSION_REQUEST_QUOTA)),
+        DEFAULT_SESSION_REQUEST_QUOTA,
+        1,
+        MAX_SESSION_REQUEST_QUOTA,
+        errors,
+    )
+    request_cooldown_seconds = _parse_float(
+        "OPENAI_REQUEST_COOLDOWN_SECONDS",
+        source.get(
+            "OPENAI_REQUEST_COOLDOWN_SECONDS",
+            str(DEFAULT_REQUEST_COOLDOWN_SECONDS),
+        ),
+        DEFAULT_REQUEST_COOLDOWN_SECONDS,
+        0.0,
+        MAX_COOLDOWN_SECONDS,
+        errors,
+    )
 
     api_key = source.get("OPENAI_API_KEY", "").strip() or None
     if enabled and not api_key:
@@ -161,6 +224,11 @@ def load_openai_config(environ: Mapping[str, str] | None = None) -> OpenAIConfig
         max_output_tokens=max_output_tokens,
         request_timeout_seconds=request_timeout_seconds,
         max_retries=max_retries,
+        max_question_chars=max_question_chars,
+        max_evidence_items=max_evidence_items,
+        max_context_chars=max_context_chars,
+        session_request_quota=session_request_quota,
+        request_cooldown_seconds=request_cooldown_seconds,
         errors=tuple(errors),
         _api_key=api_key,
     )

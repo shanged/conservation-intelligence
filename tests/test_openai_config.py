@@ -11,9 +11,14 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
 from openai_config import (  # noqa: E402
+    DEFAULT_MAX_CONTEXT_CHARS,
+    DEFAULT_MAX_EVIDENCE_ITEMS,
     DEFAULT_MAX_OUTPUT_TOKENS,
+    DEFAULT_MAX_QUESTION_CHARS,
     DEFAULT_MAX_RETRIES,
     DEFAULT_REQUEST_TIMEOUT_SECONDS,
+    DEFAULT_REQUEST_COOLDOWN_SECONDS,
+    DEFAULT_SESSION_REQUEST_QUOTA,
     load_openai_config,
 )
 
@@ -98,6 +103,29 @@ class OpenAIConfigurationTests(unittest.TestCase):
         )
         self.assert_safe_fallback(config)
         self.assertGreaterEqual(len(config.safe_diagnostics()), 2)
+
+    def test_runtime_control_defaults_are_conservative(self) -> None:
+        config = load_openai_config({"USE_OPENAI_CHATBOT": "false"})
+        self.assertEqual(config.max_question_chars, DEFAULT_MAX_QUESTION_CHARS)
+        self.assertEqual(config.max_evidence_items, DEFAULT_MAX_EVIDENCE_ITEMS)
+        self.assertEqual(config.max_context_chars, DEFAULT_MAX_CONTEXT_CHARS)
+        self.assertEqual(config.session_request_quota, DEFAULT_SESSION_REQUEST_QUOTA)
+        self.assertEqual(config.request_cooldown_seconds, DEFAULT_REQUEST_COOLDOWN_SECONDS)
+
+    def test_invalid_runtime_controls_disable_openai(self) -> None:
+        config = load_openai_config(
+            {
+                "USE_OPENAI_CHATBOT": "true",
+                "OPENAI_API_KEY": FAKE_TEST_KEY,
+                "OPENAI_MAX_QUESTION_CHARS": "0",
+                "OPENAI_MAX_EVIDENCE_ITEMS": "99",
+                "OPENAI_MAX_CONTEXT_CHARS": "100",
+                "OPENAI_SESSION_REQUEST_QUOTA": "0",
+                "OPENAI_REQUEST_COOLDOWN_SECONDS": "-1",
+            }
+        )
+        self.assert_safe_fallback(config)
+        self.assertGreaterEqual(len(config.safe_diagnostics()), 5)
 
     def test_secret_never_appears_in_safe_outputs(self) -> None:
         config = load_openai_config(
