@@ -40,7 +40,7 @@ SENSITIVE_OUTPUT = re.compile(
     re.IGNORECASE,
 )
 SECRET_REQUEST = re.compile(
-    r"(?:api[_ -]?key|password|secret|environment variables?|system prompt|"
+    r"(?:api[_ -]?key|password|secret|environment variables?|system (?:prompt|instructions?)|"
     r"authorization header|request headers?)",
     re.IGNORECASE,
 )

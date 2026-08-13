@@ -5,6 +5,27 @@ conservation research. The prototype organizes a 35-source corpus, extracts
 citable text and structured facts, builds an evidence-backed wiki, and answers
 questions with inspectable source citations.
 
+This is an experimental research prototype analyzing public conservation
+documents. Answers may be incomplete or incorrect. Verify important conclusions
+against the cited source documents before relying on them.
+
+## Privacy and safe use
+
+When optional OpenAI synthesis is enabled, the submitted question and selected
+excerpts from the public conservation corpus may be sent to OpenAI. The
+application does not intentionally persist submitted questions, model responses,
+retrieved excerpts, or session histories to application storage. Do not submit
+confidential, sensitive, private, or personally identifying information. This
+design does not imply that input is anonymous or cryptographically private, and
+it makes no broader claim about provider data handling beyond the configured API
+request behavior.
+
+When OpenAI synthesis is disabled, chatbot answers remain on the local
+deterministic retrieval/response path. Every answer identifies whether it used
+AI synthesis or local deterministic fallback. Insufficient corpus evidence is
+shown as a research limitation, distinct from temporary service errors and
+request limits.
+
 ## Pipeline
 
 ```text

@@ -89,11 +89,11 @@ def runtime_configuration_error() -> str | None:
     missing = missing_runtime_artifacts()
     if not missing:
         return None
-    paths = "\n".join(f"- {path}" for path in missing)
     return (
         "Required precomputed runtime artifacts are missing. The application "
         "will not rebuild them automatically. Configure "
-        f"{ARTIFACT_ROOT_ENV} to a complete artifact package or restore:\n{paths}"
+        f"{ARTIFACT_ROOT_ENV} to a complete artifact package or restore the "
+        "deployment artifact set."
     )
 
 

@@ -22,6 +22,14 @@ from runtime_artifacts import (  # noqa: E402
     runtime_configuration_error,
 )
 from search_chunks import search_chunks  # noqa: E402
+from ui_safety import (  # noqa: E402
+    PRIVACY_NOTICE,
+    RESEARCH_DISCLAIMER,
+    answer_mode_label,
+    fallback_status,
+    safe_plain_text,
+    safe_source_url,
+)
 
 
 st.set_page_config(
@@ -45,7 +53,7 @@ def load_metadata() -> pd.DataFrame:
 def corpus_tab() -> None:
     """Render corpus counts, filters, statuses, and source metadata."""
     if not METADATA_PATH.exists():
-        st.error(f"Metadata file not found: {METADATA_PATH}")
+        st.error("Corpus metadata is unavailable. Restore the deployment artifacts.")
         return
 
     metadata = load_metadata()
@@ -68,10 +76,14 @@ def corpus_tab() -> None:
         "Download status: "
         + ", ".join(f"{status}: {count}" for status, count in status_counts.items())
     )
-    st.dataframe(
-        filtered[
+    display_metadata = filtered[
             ["doc_id", "title", "year", "agency", "topic", "download_status", "url"]
-        ],
+        ].copy()
+    display_metadata["url"] = display_metadata["url"].map(
+        lambda value: safe_source_url(value) or ""
+    )
+    st.dataframe(
+        display_metadata,
         width="stretch",
         hide_index=True,
         column_config={"url": st.column_config.LinkColumn("Source URL")},
@@ -105,7 +117,7 @@ def display_result(result: object, semantic: bool) -> None:
     doc_id = getattr(result, "doc_id")
     page = getattr(result, "page")
     with st.container(border=True):
-        st.markdown(f"#### {title}")
+        st.subheader(str(title), divider=False)
         location = f"Page {page}" if str(page) != "Web" else "Location: Web page"
         details = f"**{doc_id}** · {location}"
         if semantic:
@@ -113,9 +125,13 @@ def display_result(result: object, semantic: bool) -> None:
                 f" · Chunk {getattr(result, 'chunk_id')}"
                 f" · Similarity {getattr(result, 'similarity'):.3f}"
             )
-        st.markdown(details)
-        st.write(getattr(result, "text_snippet"))
-        st.markdown(f"[Open source document]({getattr(result, 'source_url')})")
+        st.write(details)
+        st.text(str(getattr(result, "text_snippet")))
+        source_url = safe_source_url(getattr(result, "source_url"))
+        if source_url:
+            st.link_button("Open source document", source_url)
+        else:
+            st.caption("Source link unavailable.")
 
 
 def search_tab() -> None:
@@ -140,17 +156,17 @@ def search_tab() -> None:
             from semantic_search import VectorIndexNotFoundError, semantic_search
 
             results = semantic_search(query, top_k=result_count)
-        except VectorIndexNotFoundError as exc:
-            st.warning(str(exc))
+        except VectorIndexNotFoundError:
+            st.warning("Semantic search artifacts are unavailable.")
             return
-        except Exception as exc:
-            st.error(f"Search could not be completed: {exc}")
+        except Exception:
+            st.error("Search could not be completed safely; please try again.")
             return
     else:
         try:
             results = search_chunks(query, DATABASE_PATH, limit=result_count)
-        except Exception as exc:
-            st.error(f"Search could not be completed: {exc}")
+        except Exception:
+            st.error("Search could not be completed safely; please try again.")
             return
 
     if not results:
@@ -186,23 +202,34 @@ def wiki_tab() -> None:
     relative = choices.loc[choices["title"] == title, "file_path"].iloc[0]
     path = PROJECT_ROOT / relative
     if not path.exists():
-        st.warning(f"Wiki file is missing: {relative}")
+        st.warning("The selected wiki page is unavailable.")
         return
     st.markdown(path.read_text(encoding="utf-8"))
 
 
 def render_chat_response(response: dict[str, object]) -> None:
     """Display an answer and its inspectable source evidence."""
+    st.caption(answer_mode_label(response))
+    reason_status = fallback_status(response)
+    if reason_status and response.get("fallback_reason") != "insufficient_evidence":
+        st.caption(reason_status)
     if response.get("status_message"):
         st.info(str(response["status_message"]))
-    st.markdown(str(response["answer"]))
+    if response.get("insufficient"):
+        st.info(str(response["answer"]))
+    else:
+        st.markdown(safe_plain_text(response["answer"]))
     evidence = response.get("evidence", [])
     with st.expander(f"Sources ({len(evidence)})"):
         for item in evidence:
             location = "Web" if item["page"] == "Web" else f"page {item['page']}"
             st.markdown(f"**{item['title']}** — {item['doc_id']}, {location}")
-            st.write(item["snippet"])
-            st.markdown(f"[Open source document]({item['source_url']})")
+            st.text(str(item["snippet"]))
+            source_url = safe_source_url(item.get("source_url"))
+            if source_url:
+                st.link_button("Open source document", source_url)
+            else:
+                st.caption("Source link unavailable.")
 
 
 def chatbot_tab() -> None:
@@ -219,12 +246,12 @@ def chatbot_tab() -> None:
             if message["role"] == "assistant":
                 render_chat_response(message["response"])
             else:
-                st.markdown(message["content"])
+                st.text(str(message["content"]))
     prompt = st.chat_input("Ask a question about the conservation corpus")
     if prompt:
         st.session_state.chat_history.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
-            st.markdown(prompt)
+            st.text(prompt)
         with st.chat_message("assistant"):
             try:
                 # The chatbot uses semantic retrieval, so load it only after a
@@ -246,9 +273,9 @@ def chatbot_tab() -> None:
                     usage.append(diagnostics)
                     del usage[:-50]
                 render_chat_response(response)
-            except VectorIndexNotFoundError as exc:
-                response = {"answer": str(exc), "evidence": [], "citations": [], "insufficient": True}
-                st.warning(str(exc))
+            except VectorIndexNotFoundError:
+                response = {"answer": "Semantic retrieval is temporarily unavailable.", "evidence": [], "citations": [], "insufficient": True, "mode": "deterministic_fallback", "fallback_reason": "retrieval_failure"}
+                st.warning(response["answer"])
             except Exception:
                 response = {"answer": "The question could not be processed safely; please try again.", "evidence": [], "citations": [], "insufficient": True}
                 st.error(response["answer"])
@@ -263,8 +290,8 @@ def evaluation_tab() -> None:
         return
     try:
         records = json.loads(path.read_text(encoding="utf-8"))
-    except Exception as exc:
-        st.error(f"Evaluation output could not be read: {exc}")
+    except Exception:
+        st.error("Evaluation output could not be read safely.")
         return
     passed = sum(record["status"] == "PASS" for record in records)
     st.metric("Automated heuristic checks", f"{passed}/{len(records)} passed")
@@ -278,6 +305,9 @@ def evaluation_tab() -> None:
 
 
 st.title("Conservation Document Intelligence Prototype")
+st.warning(RESEARCH_DISCLAIMER)
+with st.expander("Privacy and safe use"):
+    st.write(PRIVACY_NOTICE)
 st.caption("DOC001–DOC035 · Local, citation-grounded document intelligence")
 
 corpus, search, wiki, chatbot, evaluation = st.tabs(
