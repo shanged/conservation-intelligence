@@ -182,6 +182,9 @@ class OpenAIChatbotTests(unittest.TestCase):
         self.assertEqual(factory.client_kwargs[0]["max_retries"], 0)
         self.assertEqual(result.diagnostics["input_tokens"], 100)
         self.assertEqual(result.diagnostics["total_tokens"], 120)
+        self.assertIn("retrieval_latency_ms", result.diagnostics)
+        self.assertIn("synthesis_latency_ms", result.diagnostics)
+        self.assertEqual(result.diagnostics["evidence_supplied"], ["chunk-2", "chunk-23"])
 
     def test_evidence_count_and_context_are_bounded(self):
         evidence = [

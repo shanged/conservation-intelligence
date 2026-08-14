@@ -303,6 +303,38 @@ def evaluation_tab() -> None:
             for note in record["notes"]:
                 st.write(f"- {note}")
 
+    hybrid_path = PROJECT_ROOT / "outputs" / "hybrid_evaluation.json"
+    st.divider()
+    st.subheader("Deterministic vs hybrid comparison")
+    if not hybrid_path.exists():
+        st.info("Run the offline hybrid evaluation to generate comparison results.")
+        return
+    try:
+        comparison = json.loads(hybrid_path.read_text(encoding="utf-8"))
+    except Exception:
+        st.error("Hybrid evaluation output could not be read safely.")
+        return
+    st.caption(str(comparison.get("integrity_check_notice", "Automated comparison.")))
+    for record in comparison.get("records", []):
+        deterministic = record["deterministic"]
+        hybrid = record["hybrid"]
+        with st.expander(f"{record['number']}. {record['question']}"):
+            left, right = st.columns(2)
+            for column, label, item in (
+                (left, "Deterministic", deterministic),
+                (right, "Hybrid OpenAI", hybrid),
+            ):
+                column.markdown(f"**{label}**")
+                column.write(f"Integrity: {'PASS' if item['citation_valid'] else 'FAIL'}")
+                column.write(f"Latency: {item['latency_ms']} ms")
+                column.write(f"Sources: {item['metrics']['unique_source_documents']}")
+                column.write(f"Fallback: {item.get('fallback', False)}")
+                usage = item.get("usage") or {}
+                if usage.get("total_tokens") is not None:
+                    column.write(f"Tokens: {usage['total_tokens']}")
+                cost = item.get("estimated_cost_usd")
+                column.write(f"Estimated cost: {'unavailable' if cost is None else f'${cost:.6f}'}")
+
 
 st.title("Conservation Document Intelligence Prototype")
 st.warning(RESEARCH_DISCLAIMER)

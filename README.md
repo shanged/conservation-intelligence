@@ -235,6 +235,38 @@ Pass/fail statuses are automated integrity checks, not human ratings. They
 check answer presence, retrieved evidence, citation presence, known document
 IDs, and valid SQLite page/location values.
 
+### Deterministic vs hybrid comparison
+
+Run the separate offline comparison without an API key or paid request:
+
+```powershell
+python scripts/08_run_hybrid_evaluation.py
+```
+
+This preserves the original `demo_answers` baseline and writes
+`outputs/hybrid_evaluation.json` plus `outputs/hybrid_evaluation.md`. Offline
+mode uses a fake Responses client while exercising local retrieval, citation
+validation, latency/usage capture, comparative heuristics, and security cases.
+Completeness, extractiveness, source diversity, and wetland-summary checks are
+conservative indicators—not human factual-quality judgments.
+
+Token usage is recorded when supplied by the response. Estimated cost remains
+unavailable unless the time-sensitive, non-secret
+`OPENAI_INPUT_COST_PER_MILLION_TOKENS` and
+`OPENAI_OUTPUT_COST_PER_MILLION_TOKENS` variables are configured. Pricing is
+never fetched dynamically or treated as permanent truth.
+
+Live mode is disabled by default. A future one-question paid smoke test requires
+an explicitly enabled OpenAI configuration and both flags:
+
+```powershell
+python scripts/08_run_hybrid_evaluation.py --live --limit 1
+```
+
+The command prints a paid-usage warning and never prints the API key. Do not run
+it until a real key and server-side spend controls have been configured outside
+Codex.
+
 ## Known limitations
 
 - Three remote sources still require manual intervention.

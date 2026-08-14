@@ -340,6 +340,7 @@ def answer_question_hybrid(
             started_at=started_at, now=time_provider,
         )
 
+    retrieval_started = time_provider()
     try:
         evidence = select_openai_evidence(
             normalized_query, active_config.max_evidence_items
@@ -349,6 +350,7 @@ def answer_question_hybrid(
             normalized_query, "retrieval_failure", config=active_config,
             started_at=started_at, now=time_provider,
         )
+    retrieval_finished = time_provider()
 
     records, request_input = _bounded_records(
         normalized_query,
@@ -382,6 +384,7 @@ def answer_question_hybrid(
                 status_message=decision.status_message,
             )
     factory = client_factory or _default_client_factory
+    synthesis_started = time_provider()
     try:
         client = factory(
             api_key=active_config.server_api_key(),
@@ -419,6 +422,13 @@ def answer_question_hybrid(
             mode="openai", reason=None, model=active_config.model,
             started_at=started_at, now=time_provider, usage=usage,
         )
+        diagnostics["retrieval_latency_ms"] = round(
+            max(0.0, retrieval_finished - retrieval_started) * 1000, 1
+        )
+        diagnostics["synthesis_latency_ms"] = round(
+            max(0.0, time_provider() - synthesis_started) * 1000, 1
+        )
+        diagnostics["evidence_supplied"] = [record.chunk_id for record in records]
         return HybridChatResponse(
             answer=parsed.answer,
             citations=parsed.citations,
