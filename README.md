@@ -1,3 +1,12 @@
+---
+title: Conservation Document Intelligence
+emoji: 🌿
+colorFrom: green
+colorTo: blue
+sdk: docker
+app_port: 7860
+---
+
 # Conservation Document Intelligence Prototype
 
 A local, reproducible demonstration of public-document intelligence for

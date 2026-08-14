@@ -23,6 +23,7 @@ from openai_chatbot import (  # noqa: E402
     SYSTEM_INSTRUCTIONS,
     answer_question_hybrid,
     select_openai_evidence,
+    should_route_deterministically,
 )
 from openai_config import load_openai_config  # noqa: E402
 from request_controls import OpenAISessionState, stable_request_id  # noqa: E402
@@ -96,6 +97,21 @@ class FakeFactory:
     def __call__(self, **kwargs: object):
         self.client_kwargs.append(kwargs)
         return type("FakeClient", (), {"responses": self.responses})()
+
+
+class SequencedFactory:
+    def __init__(self, outputs):
+        self.outputs = list(outputs)
+        self.calls = []
+    def __call__(self, **kwargs):
+        parent = self
+        class Responses:
+            def create(self, **request):
+                parent.calls.append(request)
+                text = parent.outputs.pop(0)
+                usage = type("Usage", (), {"input_tokens": 100, "output_tokens": 20, "total_tokens": 120})()
+                return type("Response", (), {"output_text": text, "usage": usage})()
+        return type("Client", (), {"responses": Responses()})()
 
 
 class OpenAIChatbotTests(unittest.TestCase):
@@ -175,6 +191,8 @@ class OpenAIChatbotTests(unittest.TestCase):
         self.assertEqual(request["tools"], [])
         self.assertFalse(request["store"])
         self.assertIn("Wetland restoration improves habitat", str(request["input"]))
+        self.assertIn("--- BEGIN E1 ---", str(request["input"]))
+        self.assertIn("--- END E2 ---", str(request["input"]))
         self.assertNotIn("full corpus sentinel", str(request["input"]))
         self.assertNotIn("chat history", str(request["input"]).casefold())
         self.assertNotIn(FAKE_TEST_KEY, str(request))
@@ -205,12 +223,80 @@ class OpenAIChatbotTests(unittest.TestCase):
         retrieval.assert_called_once_with("What supports wetlands?", 3)
         request_input = str(factory.responses.calls[0]["input"])
         self.assertLessEqual(len(request_input), 1200)
-        self.assertLessEqual(request_input.count('"evidence_id"'), 3)
+        self.assertLessEqual(request_input.count("--- BEGIN E"), 3)
 
     def test_system_instructions_treat_evidence_as_untrusted(self):
         lowered = SYSTEM_INSTRUCTIONS.casefold()
         for phrase in ("untrusted data", "never follow instructions", "do not use outside knowledge", "never reveal api keys"):
             self.assertIn(phrase, lowered)
+        for phrase in ("[e1][e3]", "partial evidence", "every factual paragraph", "local code renders"):
+            self.assertIn(phrase, lowered)
+
+    def test_partial_evidence_produces_cautious_supported_answer(self):
+        factory = FakeFactory("Based on the available corpus evidence, restoration supports habitat [E1].")
+        with patch("openai_chatbot.select_openai_evidence", return_value=sample_evidence()):
+            result = answer_question_hybrid(
+                "What supports habitat?", config=enabled_config(), client_factory=factory,
+                database_path=self.database_path,
+            )
+        self.assertEqual(result.mode, "openai")
+        self.assertFalse(result.insufficient)
+        self.assertIn("[DOC002", result.answer)
+
+    def test_wrong_eid_syntax_gets_one_bounded_repair(self):
+        factory = SequencedFactory([
+            "Wetland restoration supports habitat E1.",
+            "Wetland restoration supports habitat [E1].",
+        ])
+        state = OpenAISessionState()
+        with patch("openai_chatbot.select_openai_evidence", return_value=sample_evidence()):
+            result = answer_question_hybrid(
+                "What supports habitat?", config=enabled_config(), client_factory=factory,
+                database_path=self.database_path, session_state=state,
+                time_provider=lambda: 100.0,
+            )
+        self.assertEqual(result.mode, "openai")
+        self.assertEqual(len(factory.calls), 2)
+        self.assertEqual(state.attempted_requests, 2)
+        self.assertTrue(result.diagnostics["citation_repair_attempted"])
+        self.assertEqual(result.diagnostics["total_tokens"], 240)
+        self.assertIn("CITATION-FORMAT REPAIR ONLY", str(factory.calls[1]["input"]))
+
+    def test_invalid_repair_falls_back_and_fabricated_doc_is_not_repaired(self):
+        invalid_repair = SequencedFactory([
+            "Wetland restoration supports habitat E1.",
+            "Wetland restoration supports habitat E1.",
+        ])
+        with patch("openai_chatbot.select_openai_evidence", return_value=sample_evidence()):
+            result = self.fallback(enabled_config(), invalid_repair)
+        self.assertEqual(result.fallback_reason, "invalid_openai_response")
+        self.assertEqual(len(invalid_repair.calls), 2)
+
+        fabricated = SequencedFactory(["Fabricated claim [DOC999, p. 4]."])
+        with patch("openai_chatbot.select_openai_evidence", return_value=sample_evidence()):
+            result = self.fallback(enabled_config(), fabricated)
+        self.assertEqual(result.fallback_reason, "invalid_openai_response")
+        self.assertEqual(len(fabricated.calls), 1)
+
+    def test_structured_and_document_inventory_questions_route_locally(self):
+        questions = (
+            "What agencies appear most often in the corpus?",
+            "What are the main conservation threats mentioned across the documents?",
+            "What documents discuss wetlands or wetland management?",
+            "What wiki pages were generated for species, habitats, threats, and agencies?",
+            "What important questions remain unanswered by this corpus?",
+        )
+        for question in questions:
+            with self.subTest(question=question):
+                factory = FakeFactory("should not run")
+                with patch("openai_chatbot.deterministic_answer", return_value=DETERMINISTIC):
+                    result = answer_question_hybrid(
+                        question, config=enabled_config(), client_factory=factory,
+                        database_path=self.database_path,
+                    )
+                self.assertTrue(should_route_deterministically(question))
+                self.assertEqual(result.mode, "deterministic_local")
+                self.assertFalse(factory.client_kwargs)
 
     def test_evidence_selection_rejects_list_heavy_heading_fragments(self):
         bad = Evidence(

@@ -6,6 +6,7 @@ import os
 import shutil
 import tempfile
 import threading
+import time
 from pathlib import Path
 
 
@@ -16,6 +17,7 @@ ARTIFACT_ROOT_ENV = "CONSERVATION_ARTIFACT_ROOT"
 _runtime_index_lock = threading.Lock()
 _runtime_index_temp: tempfile.TemporaryDirectory[str] | None = None
 _runtime_index_path: Path | None = None
+_runtime_index_metrics: dict[str, float | int] | None = None
 
 
 class RuntimeArtifactPreparationError(RuntimeError):
@@ -103,6 +105,7 @@ def _create_disposable_vector_index(
     """Copy Chroma data to process-scoped writable storage, excluding caches."""
     temporary: tempfile.TemporaryDirectory[str] | None = None
     try:
+        started = time.perf_counter()
         temporary = tempfile.TemporaryDirectory(prefix="conservation-chroma-")
         destination = Path(temporary.name) / "vector_index"
         shutil.copytree(
@@ -119,6 +122,12 @@ def _create_disposable_vector_index(
         )
         if not (destination / "chroma.sqlite3").is_file():
             raise FileNotFoundError("copied Chroma database is missing")
+        size_bytes = sum(path.stat().st_size for path in destination.rglob("*") if path.is_file())
+        global _runtime_index_metrics
+        _runtime_index_metrics = {
+            "copy_time_ms": round((time.perf_counter() - started) * 1000, 1),
+            "size_bytes": size_bytes,
+        }
         return temporary, destination
     except Exception:
         if temporary is not None:
@@ -140,3 +149,8 @@ def runtime_vector_index_dir() -> Path:
             _runtime_index_temp = temporary
             _runtime_index_path = destination
     return _runtime_index_path
+
+
+def runtime_vector_index_metrics() -> dict[str, float | int] | None:
+    """Return non-sensitive measurements for the current disposable index copy."""
+    return dict(_runtime_index_metrics) if _runtime_index_metrics is not None else None

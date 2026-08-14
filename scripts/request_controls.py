@@ -60,3 +60,22 @@ def authorize_openai_request(
     state.attempted_requests += 1
     state.last_request_at = now
     return RequestDecision(True)
+
+
+def authorize_citation_repair(
+    state: OpenAISessionState,
+    config: OpenAIConfig,
+    request_id: str,
+    now: float,
+) -> RequestDecision:
+    """Count one immediate bounded repair without bypassing the session quota."""
+    if state.attempted_requests >= config.session_request_quota:
+        return RequestDecision(
+            False,
+            "session_quota_reached",
+            "Hosted AI synthesis quota has been reached for this session; using the local answer.",
+        )
+    state.processed_request_ids.add(request_id)
+    state.attempted_requests += 1
+    state.last_request_at = now
+    return RequestDecision(True)
