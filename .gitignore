@@ -49,4 +49,5 @@ outputs/*
 !outputs/relations.csv
 !outputs/demo_answers.md
 !outputs/demo_answers.json
+!outputs/hybrid_evaluation.json
 !outputs/pre_openai_baseline.md
