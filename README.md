@@ -157,15 +157,25 @@ model. Each temporary evidence record contains its E-ID, chunk ID, document ID,
 stored title, page/Web location, stored source URL, exact excerpt, and semantic
 score. Every referenced record must match the immutable SQLite document and
 chunk rows, including document ownership, location, URL, title, and excerpt.
-Only then does local code replace inline E-IDs with final `DOC` citations and
-populate the Sources panel from validated local records.
+The Responses API is constrained to return claim text plus an `evidence_ids`
+array selected from the supplied E-IDs. Local code converts that structured
+output into claim-adjacent citations, replaces E-IDs with final `DOC` citations,
+and populates the Sources panel from validated local records. A bounded repair
+request remains available for malformed legacy/free-text output.
 
-Answers with unknown or malformed E-IDs, uncited factual sentences, invented
-document/page/URL metadata, unsafe links, mismatched SQLite provenance, or a
-multi-document claim supported by only one document are rejected. Sources are
-deduplicated by document, location, and trusted URL. Multi-source and
-claim-association checks are intentionally conservative prose heuristics; they
-do not attempt general natural-language entailment.
+Answers with unknown E-IDs, invented document/page/URL metadata, unsafe links,
+mismatched SQLite provenance, or unsupported multi-document claims are rejected.
+Locally computed structured aggregates may establish corpus-wide counts without
+requiring the model to infer them from semantic excerpts. Sources are
+deduplicated by document, location, and trusted URL. The remaining validation is
+intentionally conservative and does not attempt general natural-language
+entailment.
+
+Natural-language inventory variants for agencies/organizations, threats,
+species, and habitats are routed through the structured entity database before
+synthesis. Aggregate answers must preserve every ranked row and its exact chunk
+and document counts. Representative citations are greedily diversified across
+documents so a corpus-wide result does not appear to come from one source.
 
 ### Public-demo request controls
 

@@ -20,6 +20,19 @@ ROOT = Path(__file__).resolve().parents[1]
 DATABASE = DATABASE_PATH
 STOPWORDS = {"the", "a", "an", "and", "or", "of", "to", "in", "for", "what", "which", "are", "is", "do", "does", "how", "across", "public", "documents", "document", "mention", "discuss", "evidence", "corpus", "provide", "about"}
 SUMMARY_WORDS = {"generate", "short", "cited", "summary", "summarize"}
+ENTITY_INVENTORY_ALIASES = (
+    ("agency", re.compile(r"\b(?:agenc(?:y|ies)|conservation groups?|conservation organi[sz]ations?|organizations?)\b", re.I)),
+    ("threat", re.compile(r"\b(?:conservation )?(?:threats?|pressures?|risks?)\b", re.I)),
+    ("species", re.compile(r"\b(?:species|animals?|plants?|wildlife)\b", re.I)),
+    ("habitat", re.compile(r"\b(?:habitats?|ecosystems?)\b", re.I)),
+)
+INVENTORY_CUES = re.compile(r"\b(?:list|main|common|most|frequent|frequently|mentioned|appear|represented|across)\b", re.I)
+ENTITY_INVENTORY_LABELS = {
+    "agency": "agencies and conservation organizations",
+    "threat": "conservation threats",
+    "species": "species",
+    "habitat": "habitats",
+}
 SUMMARY_THEMES = (
     (
         "Protection and restoration",
@@ -75,6 +88,20 @@ def cite(doc_id: str, page: str) -> str:
 
 def content_terms(text: str) -> set[str]:
     return {t for t in re.findall(r"[a-z]{3,}", text.casefold()) if t not in STOPWORDS | SUMMARY_WORDS}
+
+
+def entity_inventory_type(query: str) -> str | None:
+    """Recognize broad inventories without capturing relationship questions."""
+    if re.search(r"\b(?:relationship|relate|affect|impact|manage|management|why|how)\b", query, re.I):
+        return None
+    for entity_type, pattern in ENTITY_INVENTORY_ALIASES:
+        match = pattern.search(query)
+        if not match:
+            continue
+        direct = re.search(r"\b(?:what|which|who)\s+(?:are\s+)?(?:the\s+)?$", query[:match.start()], re.I)
+        if INVENTORY_CUES.search(query) or direct:
+            return entity_type
+    return None
 
 
 def sentence_quality(sentence: str, query: str) -> float:
@@ -188,15 +215,44 @@ def thematic_summary(query: str) -> tuple[str, list[Evidence]]:
 
 def entity_rank(entity_type: str, limit: int) -> list[tuple[str, int, int, Evidence]]:
     with connect_readonly(DATABASE) as connection:
-        rows = connection.execute(
-            """SELECT e.name, COUNT(*) occurrences, COUNT(DISTINCT e.doc_id) docs,
-                      e.doc_id, d.title, e.page, c.source_url, e.evidence, e.chunk_id
-               FROM entities e JOIN chunks c ON c.chunk_id=e.chunk_id JOIN documents d ON d.doc_id=e.doc_id
-               WHERE e.entity_type=? GROUP BY e.name
-               ORDER BY docs DESC, occurrences DESC, e.name LIMIT ?""", (entity_type, limit)
+        rankings = connection.execute(
+            """SELECT e.name, COUNT(*) occurrences, COUNT(DISTINCT e.doc_id) docs
+               FROM entities e WHERE e.entity_type=? GROUP BY e.name
+               ORDER BY docs DESC, occurrences DESC, e.name LIMIT ?""",
+            (entity_type, limit),
         ).fetchall()
-    return [(name, occurrences, docs, Evidence(title, doc, page, url, snippet, chunk, 1.0))
-            for name, occurrences, docs, doc, title, page, url, snippet, chunk in rows]
+        used_docs: set[str] = set()
+        ranked: list[tuple[str, int, int, Evidence]] = []
+        for name, occurrences, docs in rankings:
+            candidates = connection.execute(
+                """SELECT d.title,e.doc_id,e.page,c.source_url,e.evidence,e.chunk_id,e.confidence,c.chunk_text
+                   FROM entities e
+                   JOIN chunks c ON c.chunk_id=e.chunk_id
+                   JOIN documents d ON d.doc_id=e.doc_id
+                   WHERE e.entity_type=? AND e.name=?
+                   ORDER BY e.confidence DESC,e.doc_id,e.chunk_id""",
+                (entity_type, name),
+            ).fetchall()
+            if not candidates:
+                continue
+            chosen = next((row for row in candidates if row[1] not in used_docs), candidates[0])
+            title, doc, page, url, extracted_evidence, chunk, _, chunk_text = chosen
+            normalized_chunk = " ".join(chunk_text.split())
+            derived = best_sentence(chunk_text, name)
+            if " ".join(extracted_evidence.split()) in normalized_chunk:
+                snippet = extracted_evidence
+            elif derived and " ".join(derived.split()) in normalized_chunk:
+                snippet = derived
+            else:
+                # Entity extraction and chunk rebuilding can normalize damaged
+                # PDF glyphs differently. Anchor the evidence to an immutable
+                # prefix of the owning chunk rather than weakening validation.
+                snippet = normalized_chunk[:360].rstrip()
+            used_docs.add(doc)
+            ranked.append(
+                (name, occurrences, docs, Evidence(title, doc, page, url, snippet, chunk, 1.0))
+            )
+    return ranked
 
 
 def entity_evidence(name: str) -> Evidence | None:
@@ -255,14 +311,12 @@ def answer_question(query: str, evidence_limit: int = 7) -> ChatResponse:
         return ChatResponse("Please enter a question.", (), (), True)
     semantic = semantic_evidence(query, evidence_limit)
     lower = query.casefold()
+    inventory_type = entity_inventory_type(query)
 
-    if "agencies appear most often" in lower:
-        ranked = entity_rank("agency", 6); evidence = merge_evidence([r[3] for r in ranked], semantic)
-        answer = "The most broadly represented agencies, measured from provenance-bearing entity occurrences, are:\n" + "\n".join(
-            f"- **{name}** — {occ} chunk occurrences across {docs} documents. {cite(item.doc_id,item.page)}" for name, occ, docs, item in ranked)
-    elif "main conservation threats" in lower:
-        ranked = entity_rank("threat", 6); evidence = merge_evidence([r[3] for r in ranked], semantic)
-        answer = "The most broadly represented extracted threats are:\n" + "\n".join(
+    if inventory_type:
+        ranked = entity_rank(inventory_type, 6); evidence = merge_evidence([r[3] for r in ranked], semantic)
+        label = ENTITY_INVENTORY_LABELS[inventory_type]
+        answer = f"The most broadly represented extracted {label} are:\n" + "\n".join(
             f"- **{name}** — {occ} chunk occurrences across {docs} documents. {cite(item.doc_id,item.page)}" for name, occ, docs, item in ranked)
     elif "wiki pages were generated" in lower:
         answer, primary = wiki_inventory(); evidence = merge_evidence(primary, semantic)

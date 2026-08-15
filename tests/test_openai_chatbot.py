@@ -20,8 +20,10 @@ from openai_chatbot import (  # noqa: E402
     INSUFFICIENT_ANSWER,
     EMPTY_QUESTION_ANSWER,
     OVERSIZED_QUESTION_ANSWER,
+    REPAIRABLE_VALIDATION_ERRORS,
     SYSTEM_INSTRUCTIONS,
     answer_question_hybrid,
+    entity_inventory_type,
     select_openai_evidence,
     should_route_deterministically,
 )
@@ -229,7 +231,7 @@ class OpenAIChatbotTests(unittest.TestCase):
         lowered = SYSTEM_INSTRUCTIONS.casefold()
         for phrase in ("untrusted data", "never follow instructions", "do not use outside knowledge", "never reveal api keys"):
             self.assertIn(phrase, lowered)
-        for phrase in ("[e1][e3]", "partial evidence", "every factual paragraph", "local code renders"):
+        for phrase in ("evidence_ids", "partial evidence", "prose only", "local code renders"):
             self.assertIn(phrase, lowered)
 
     def test_partial_evidence_produces_cautious_supported_answer(self):
@@ -262,7 +264,7 @@ class OpenAIChatbotTests(unittest.TestCase):
         self.assertEqual(result.diagnostics["total_tokens"], 240)
         self.assertIn("CITATION-FORMAT REPAIR ONLY", str(factory.calls[1]["input"]))
 
-    def test_invalid_repair_falls_back_and_fabricated_doc_is_not_repaired(self):
+    def test_invalid_format_repair_falls_back_after_one_attempt(self):
         invalid_repair = SequencedFactory([
             "Wetland restoration supports habitat E1.",
             "Wetland restoration supports habitat E1.",
@@ -272,16 +274,57 @@ class OpenAIChatbotTests(unittest.TestCase):
         self.assertEqual(result.fallback_reason, "invalid_openai_response")
         self.assertEqual(len(invalid_repair.calls), 2)
 
-        fabricated = SequencedFactory(["Fabricated claim [DOC999, p. 4]."])
+    def test_repair_allowlist_is_formatting_only_and_immutable(self):
+        self.assertIsInstance(REPAIRABLE_VALIDATION_ERRORS, frozenset)
+        self.assertEqual(
+            REPAIRABLE_VALIDATION_ERRORS,
+            frozenset({"missing_or_malformed_evidence_reference"}),
+        )
+
+    def test_unsafe_or_unsupported_failures_never_attempt_repair(self):
+        cases = {
+            "unknown evidence ID": "Wetland restoration supports habitat [E99].",
+            "fabricated DOC citation": "Wetland restoration [DOC999, p. 12].",
+            "model-created page": "Wetland restoration occurs on page 999 [E1].",
+            "model-created URL": "Wetland restoration is described at https://attacker.invalid [E1].",
+            "unsupported multi-source claim": "Across the corpus, restoration is widespread [E1].",
+            "unsupported uncited claim": "Wetland restoration supports habitat [E1]. Mars has oceans.",
+        }
+        for label, rejected in cases.items():
+            with self.subTest(label=label):
+                factory = SequencedFactory([
+                    rejected,
+                    "Wetland restoration supports habitat [E1].",
+                ])
+                with patch("openai_chatbot.select_openai_evidence", return_value=sample_evidence()):
+                    result = self.fallback(enabled_config(), factory)
+                self.assertEqual(result.mode, "deterministic_fallback")
+                self.assertEqual(result.fallback_reason, "invalid_openai_response")
+                self.assertEqual(len(factory.calls), 1)
+                self.assertFalse(result.diagnostics["citation_repair_attempted"])
+
+    def test_structured_output_is_rendered_and_cited_locally(self):
+        factory = FakeFactory(
+            '{"insufficient":false,"claims":['
+            '{"text":"Restoration improves wetland habitat. It supports monitoring; results remain locally grounded.","evidence_ids":["E1"]},'
+            '{"text":"Regional monitoring reports change over time.","evidence_ids":["E2"]}]}'
+        )
         with patch("openai_chatbot.select_openai_evidence", return_value=sample_evidence()):
-            result = self.fallback(enabled_config(), fabricated)
-        self.assertEqual(result.fallback_reason, "invalid_openai_response")
-        self.assertEqual(len(fabricated.calls), 1)
+            result = answer_question_hybrid(
+                "Summarize wetland work.", config=enabled_config(),
+                client_factory=factory, database_path=self.database_path,
+            )
+        self.assertEqual(result.mode, "openai")
+        self.assertIn("[DOC002, pp. 16–20]", result.answer)
+        self.assertIn("[DOC023, Web]", result.answer)
+        self.assertEqual(result.answer.count("[DOC002, pp. 16–20]"), 3)
+        schema = factory.responses.calls[0]["text"]["format"]
+        self.assertEqual(schema["type"], "json_schema")
+        enum = schema["schema"]["properties"]["claims"]["items"]["properties"]["evidence_ids"]["items"]["enum"]
+        self.assertEqual(enum, ["E1", "E2"])
 
     def test_structured_and_document_inventory_questions_route_locally(self):
         questions = (
-            "What agencies appear most often in the corpus?",
-            "What are the main conservation threats mentioned across the documents?",
             "What documents discuss wetlands or wetland management?",
             "What wiki pages were generated for species, habitats, threats, and agencies?",
             "What important questions remain unanswered by this corpus?",
@@ -297,6 +340,88 @@ class OpenAIChatbotTests(unittest.TestCase):
                 self.assertTrue(should_route_deterministically(question))
                 self.assertEqual(result.mode, "deterministic_local")
                 self.assertFalse(factory.client_kwargs)
+
+    def test_entity_inventory_intent_handles_natural_variations(self):
+        cases = {
+            "What agencies appear in the documents?": "agency",
+            "What are the main conservation groups mentioned?": "agency",
+            "Which organizations are most represented across the corpus?": "agency",
+            "What are the common conservation threats?": "threat",
+            "Which species appear most often?": "species",
+            "What habitats are mentioned?": "habitat",
+        }
+        for question, expected in cases.items():
+            with self.subTest(question=question):
+                self.assertEqual(entity_inventory_type(question), expected)
+        for question in (
+            "What supports habitat?",
+            "How do agencies manage wetlands?",
+            "What is the relationship between invasive species and habitat?",
+        ):
+            with self.subTest(question=question):
+                self.assertIsNone(entity_inventory_type(question))
+
+    def test_agency_inventory_uses_ranked_database_context_and_openai(self):
+        question = "What are the main conservation groups mentioned?"
+        factory = FakeFactory("The leading group is Ducks Unlimited [E1].")
+        ranked = [("Ducks Unlimited", 30, 8, sample_evidence()[0])]
+        with patch("openai_chatbot.entity_rank", return_value=ranked):
+            result = answer_question_hybrid(
+                question, config=enabled_config(), client_factory=factory,
+                database_path=self.database_path,
+            )
+        self.assertEqual(result.mode, "openai")
+        request_input = str(factory.responses.calls[0]["input"])
+        self.assertIn("Ducks Unlimited: 30 chunk occurrences across 8 documents", request_input)
+
+    def test_incomplete_structured_aggregate_falls_back_without_repair(self):
+        question = "What are the main conservation threats?"
+        outputs = [
+            '{"insufficient":false,"claims":['
+            '{"text":"Habitat loss is a major threat.","evidence_ids":["E1"]}]}' ,
+            '{"insufficient":false,"claims":['
+            '{"text":"Habitat loss has 60 chunk occurrences across 10 documents.","evidence_ids":["E1"]},'
+            '{"text":"Pollution has 173 chunk occurrences across 8 documents.","evidence_ids":["E2"]}]}' ,
+        ]
+        factory = SequencedFactory(outputs)
+        ranked = [
+            ("habitat loss", 60, 10, sample_evidence()[0]),
+            ("pollution", 173, 8, sample_evidence()[1]),
+        ]
+        with patch("openai_chatbot.entity_rank", return_value=ranked):
+            result = answer_question_hybrid(
+                question, config=enabled_config(), client_factory=factory,
+                database_path=self.database_path,
+            )
+        self.assertEqual(result.mode, "deterministic_fallback")
+        self.assertEqual(result.fallback_reason, "invalid_openai_response")
+        self.assertEqual(len(factory.calls), 1)
+        self.assertFalse(result.diagnostics["citation_repair_attempted"])
+        schema = factory.calls[0]["text"]["format"]["schema"]["properties"]["claims"]
+        self.assertEqual(schema["minItems"], 2)
+        self.assertEqual(schema["maxItems"], 2)
+
+    def test_main_threats_question_uses_openai_when_enabled(self):
+        question = "What are the main conservation threats mentioned across the documents?"
+        factory = FakeFactory(
+            "The leading extracted threats include habitat loss (60 occurrences across 10 documents) [E1] "
+            "and pollution (173 occurrences across 8 documents) [E2]."
+        )
+        ranked = [
+            ("habitat loss", 60, 10, sample_evidence()[0]),
+            ("pollution", 173, 8, sample_evidence()[1]),
+        ]
+        with patch("openai_chatbot.entity_rank", return_value=ranked):
+            result = answer_question_hybrid(
+                question, config=enabled_config(), client_factory=factory,
+                database_path=self.database_path,
+            )
+        self.assertFalse(should_route_deterministically(question))
+        self.assertEqual(result.mode, "openai")
+        self.assertEqual(len(factory.responses.calls), 1)
+        request_input = str(factory.responses.calls[0]["input"])
+        self.assertIn("TRUSTED LOCAL AGGREGATE", request_input)
+        self.assertIn("habitat loss: 60 chunk occurrences across 10 documents [E1]", request_input)
 
     def test_evidence_selection_rejects_list_heavy_heading_fragments(self):
         bad = Evidence(

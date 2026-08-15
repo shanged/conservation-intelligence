@@ -19,6 +19,7 @@ RUN groupadd --system app && useradd --system --gid app --home-dir /tmp/app-home
     mkdir -p /tmp/app-home && chown app:app /tmp/app-home
 
 COPY app.py ./
+COPY .streamlit/config.toml ./.streamlit/config.toml
 COPY scripts/chatbot.py scripts/citation_validation.py scripts/openai_chatbot.py scripts/openai_config.py scripts/request_controls.py scripts/runtime_artifacts.py scripts/search_chunks.py scripts/semantic_search.py scripts/sqlite_readonly.py scripts/ui_safety.py ./scripts/
 COPY data/metadata.csv ./data/metadata.csv
 COPY wiki/ ./wiki/

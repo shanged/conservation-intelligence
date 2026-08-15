@@ -4,6 +4,7 @@
 
 - `Dockerfile`, `requirements.runtime.txt`, and `.dockerignore`
 - `app.py`
+- `.streamlit/config.toml` (non-secret server configuration)
 - Runtime modules explicitly copied from `scripts/` by the Dockerfile
 - `data/metadata.csv`
 - `deployment_artifacts/db/conservation.db`

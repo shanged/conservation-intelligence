@@ -140,6 +140,7 @@ def validate_and_render_model_answer(
     records: tuple[EvidenceRecord, ...],
     *,
     database_path: str | Path = DATABASE_PATH,
+    trusted_multi_document_claims: bool = False,
 ) -> ValidatedCitationAnswer:
     """Validate model E-IDs against SQLite, then render trusted local citations."""
     answer = text.strip()
@@ -176,7 +177,7 @@ def validate_and_render_model_answer(
         referenced_records.append(record)
 
     _validate_claim_association(answer)
-    if MULTI_SOURCE_CLAIM.search(answer):
+    if MULTI_SOURCE_CLAIM.search(answer) and not trusted_multi_document_claims:
         if len({record.doc_id for record in referenced_records}) < 2:
             raise CitationValidationError("unsupported_multi_source_claim")
 

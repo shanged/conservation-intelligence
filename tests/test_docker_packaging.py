@@ -15,6 +15,7 @@ class DockerPackagingTests(unittest.TestCase):
         self.assertIn("FROM python:3.11-slim", text)
         self.assertIn("USER app", text)
         self.assertIn("EXPOSE 7860", text)
+        self.assertIn("COPY .streamlit/config.toml", text)
         self.assertIn('"--server.address=0.0.0.0"', text)
         self.assertIn('"--server.port=7860"', text)
         self.assertNotIn("OPENAI_API_KEY=", text)

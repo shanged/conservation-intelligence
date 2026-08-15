@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import sqlite3
 import sys
 import unittest
 from pathlib import Path
@@ -11,13 +12,28 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from chatbot import answer_question, best_sentence, validate_response  # noqa: E402
+from chatbot import answer_question, best_sentence, entity_rank, validate_response  # noqa: E402
 
 
 WETLAND_SUMMARY = "Generate a short cited summary of wetland conservation evidence in the corpus."
 
 
 class EvidenceQualityTests(unittest.TestCase):
+    def test_ranked_entity_evidence_is_diversified_across_documents(self) -> None:
+        connection = sqlite3.connect(ROOT / "db" / "conservation.db")
+        self.addCleanup(connection.close)
+        for entity_type in ("agency", "threat", "species", "habitat"):
+            with self.subTest(entity_type=entity_type):
+                ranked = entity_rank(entity_type, 6)
+                self.assertEqual(len(ranked), 6)
+                self.assertEqual(len({item.doc_id for _, _, _, item in ranked}), 6)
+                for _, _, _, item in ranked:
+                    chunk = connection.execute(
+                        "SELECT chunk_text FROM chunks WHERE chunk_id=?",
+                        (item.chunk_id,),
+                    ).fetchone()[0]
+                    self.assertIn(" ".join(item.snippet.split()), " ".join(chunk.split()))
+
     def test_rejects_table_of_contents_and_species_lists(self) -> None:
         contents = "Memorial Wetlands 135 Forested Swamp 136 Case Study 137 Literature Cited 140 Conservation Overview 141…"
         species = "97 species including: American black duck, Blue-winged teal, Ruddy duck, Glossy ibis, Yellow rail, Sedge wren, Queen snake."

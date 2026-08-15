@@ -213,6 +213,14 @@ def render_chat_response(response: dict[str, object]) -> None:
     reason_status = fallback_status(response)
     if reason_status and response.get("fallback_reason") != "insufficient_evidence":
         st.caption(reason_status)
+    diagnostics = response.get("diagnostics")
+    if (
+        response.get("fallback_reason") == "invalid_openai_response"
+        and isinstance(diagnostics, dict)
+        and diagnostics.get("validation_failure_category")
+    ):
+        detail = str(diagnostics["validation_failure_category"]).replace("_", " ")
+        st.caption(f"Validation detail: {detail}.")
     if response.get("status_message"):
         st.info(str(response["status_message"]))
     if response.get("insufficient"):

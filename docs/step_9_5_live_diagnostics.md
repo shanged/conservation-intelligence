@@ -21,12 +21,12 @@ than presented as observed model text.
 
 ## Structured-output decision
 
-Keep free-form answer text with inline E-IDs. A JSON wrapper could make fields
-such as `used_evidence_ids` easier to parse, but it would not establish that each
-claim has an adjacent citation. The existing local validator already enforces
-claim-level placement, rejects unknown IDs and model-created source metadata,
-and renders final citations from SQLite. A bounded formatting-repair request is
-smaller and preserves this stronger claim-level contract.
+The live failure analysis showed that free-form inline E-ID formatting was too
+fragile. The Responses API now returns schema-constrained claim objects, each
+with prose-only text and an `evidence_ids` array restricted to the IDs supplied
+for that request. Local code places those IDs adjacent to their claims and then
+performs the existing SQLite provenance validation and trusted citation
+rendering. A bounded repair request remains for malformed legacy output.
 
 ## Routing rules
 
@@ -34,9 +34,10 @@ The hybrid entry point routes the following deterministic patterns before
 retrieval or API client construction:
 
 - structured entity-frequency questions (`agencies appear most often`);
-- structured threat aggregation (`main conservation threats`);
 - generated wiki inventory and grounded unanswered-question inventory;
 - document-list questions phrased as `what/which documents discuss/mention`.
 
-Relationship and summary questions continue to use local retrieval followed by
-OpenAI synthesis because cautious prose combination can improve their utility.
+Relationship, summary, and structured threat questions use local retrieval
+followed by OpenAI synthesis when enabled because cautious prose combination
+can improve their utility. Citation validation and deterministic fallback
+remain active.

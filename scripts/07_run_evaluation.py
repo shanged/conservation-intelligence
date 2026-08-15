@@ -18,18 +18,24 @@ def main() -> int:
     questions = [line.strip() for line in QUESTIONS.read_text(encoding="utf-8").splitlines() if line.strip()]
     if len(questions) != 10:
         raise ValueError(f"Expected exactly 10 demo questions, found {len(questions)}")
-    records = []; lines = ["# Automated Heuristic Evaluation", "", "These checks validate retrieval, answer presence, and citation integrity. They are not human quality ratings.", ""]
+    records = []; lines = [
+        "# Offline Deterministic Baseline Evaluation",
+        "",
+        "These checks exercise the local deterministic answer path only; they do not call or score OpenAI synthesis. PASS validates retrieval, answer presence, and citation integrity, not human answer quality.",
+        "",
+    ]
     for number, question in enumerate(questions, 1):
         response = answer_question(question); passed, notes = validate_response(response)
         status = "PASS" if passed else "FAIL"
-        record = {"number": number, "question": question, **response.to_dict(), "status": status,
-                  "notes": notes or ["Answer, evidence, and citations passed automated integrity checks."]}
+        record = {"number": number, "question": question, "evaluation_path": "deterministic_baseline",
+                  **response.to_dict(), "status": status,
+                  "notes": notes or ["Deterministic answer, evidence, and citations passed automated integrity checks; AI synthesis was not evaluated."]}
         records.append(record)
         lines += [f"## {number}. {question}", "", f"**Heuristic status:** {status}", "", "### Generated answer", "", response.answer, "", "### Citations", ""]
         lines.append(", ".join(response.citations) if response.citations else "None (insufficient-evidence response).")
         lines += ["", "### Retrieved evidence", ""]
         for item in response.evidence:
-            lines.append(f"- **{item.title}** — {item.doc_id}, {item.page}; similarity {item.similarity:.3f}. {item.snippet}  \n  {item.source_url}")
+            lines.append(f"- **{item.title}** — {item.doc_id}, {item.page}; similarity {item.similarity:.3f}. {item.snippet}\n  {item.source_url}")
         lines += ["", "### Notes", ""] + [f"- {note}" for note in record["notes"]] + [""]
         print(f"{number:02}. {status} | {question}")
     MARKDOWN.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")

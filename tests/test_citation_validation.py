@@ -123,6 +123,15 @@ class CitationValidationTests(unittest.TestCase):
         result = self.validate("Across the corpus, restoration and assessment are themes [E1][E2].")
         self.assertEqual(len(result.sources), 2)
 
+    def test_trusted_local_aggregate_can_validate_multi_document_claim(self):
+        result = validate_and_render_model_answer(
+            "Across the corpus, restoration was counted in multiple documents [E1].",
+            self.records,
+            database_path=self.database,
+            trusted_multi_document_claims=True,
+        )
+        self.assertIn("[DOC012, pp. 25–26]", result.answer)
+
     def test_unsafe_source_schemes_never_validate(self):
         for url in ("javascript:alert(1)", "data:text/plain,x", "file:///tmp/x"):
             self.assertFalse(is_safe_source_url(url))
