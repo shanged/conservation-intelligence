@@ -1,11 +1,14 @@
 # Conservation Document Intelligence Prototype
 
-## Implementation and System Design Report
+## Technical Implementation and Handoff Guide
 
 **Project:** Conservation Document Intelligence Prototype  
 **Implementation status:** Local and private Hugging Face deployment verified  
 **Hosted environment:** Private Docker-based Hugging Face Space  
 **Primary interface:** Streamlit  
+**Private Space:** https://huggingface.co/spaces/shanged/conservation-intelligence  
+**Hosted application:** https://shanged-conservation-intelligence.hf.space/  
+**Source repository:** https://github.com/shanged/conservation-intelligence  
 
 ## 1. Executive summary
 
@@ -32,6 +35,10 @@ The implementation was developed to demonstrate that a small public-document int
 - A private, read-only hosted application that does not rebuild its corpus at startup.
 
 The prototype is not intended to be an authoritative conservation database, an unrestricted web crawler, or a substitute for expert review of source documents.
+
+### 1.1 Project overview for handoff
+
+The prototype demonstrates a complete, bounded document-intelligence workflow: public conservation sources are acquired and normalized, converted into page-aware retrieval records, embedded locally, organized into entities and Wiki pages, and exposed through search and cited question answering. The working system combines a deterministic local answer path with optional OpenAI synthesis while keeping retrieval, citation rendering, and provenance validation under application control. The current implementation is available in the private Hugging Face Space listed above; continued development should occur from the source repository and the reproducible offline pipeline described in this guide.
 
 ## 3. System architecture
 
@@ -72,6 +79,31 @@ flowchart LR
 - **OpenAI Responses API:** optional bounded synthesis layer.
 - **Docker:** reproducible hosted runtime.
 - **Hugging Face Spaces and Xet storage:** private deployment and large binary artifact storage.
+
+### 3.2 Repository and code organization
+
+The following paths are the primary handoff surface. Build and runtime responsibilities are intentionally separated.
+
+| Path | Handoff purpose |
+|---|---|
+| `app.py` | Streamlit entry point and implementation of the five user-interface tabs. |
+| `data/metadata.csv` | Canonical 35-record source inventory and source-status notes. |
+| `scripts/01_download_sources.py` through `06_generate_wiki.py` | Ordered offline corpus construction pipeline. |
+| `scripts/search_chunks.py` and `scripts/semantic_search.py` | Keyword and MiniLM/Chroma retrieval. |
+| `scripts/chatbot.py` | Deterministic local answer construction and evidence selection. |
+| `scripts/openai_chatbot.py` | Optional hybrid routing, bounded OpenAI request, structured response processing, and fallback. |
+| `scripts/citation_validation.py` | Local evidence/provenance validation and final citation rendering. |
+| `scripts/openai_config.py` and `scripts/request_controls.py` | Validated configuration, quota, cooldown, retry, and repair controls. |
+| `scripts/runtime_artifacts.py` and `scripts/sqlite_readonly.py` | Read-only artifact resolution, SQLite access, and disposable Chroma runtime copy. |
+| `wiki/` | Fifteen generated evidence-backed Markdown pages. |
+| `outputs/` | Entity/relation exports and deterministic/hybrid evaluation records. |
+| `tests/` | Demonstration questions and automated behavior/security tests. |
+| `deployment_artifacts/` | Tracked deployment-safe SQLite, Chroma, and local model snapshot. |
+| `Dockerfile`, `.dockerignore`, `requirements.runtime.txt` | Explicit hosted runtime allow-list and dependencies. |
+| `.env.example` | Non-secret configuration names and safe defaults; never place a real key here. |
+| `docs/` | Specifications, audits, deployment records, and handoff/user documentation. |
+
+Raw downloads, processed text, local database/index builds, virtual environments, caches, logs, and secrets are intentionally excluded from deployment. A developer updating the corpus should work through the numbered offline scripts rather than modifying packaged database rows by hand.
 
 ## 4. Corpus design and source governance
 
@@ -483,6 +515,35 @@ SQLite is opened with a read-only connection. Chroma may perform bookkeeping eve
 
 The temporary index is protected by a process lock, created once, cached for the process lifetime, and discarded on restart. The canonical packaged index remains unchanged.
 
+### 17.2 Running the application locally
+
+Python 3.10 or newer is recommended. From a PowerShell window in the repository root:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+streamlit run app.py
+```
+
+The application uses complete local build artifacts under `db/` when available and otherwise uses `deployment_artifacts/`. No OpenAI configuration is required for Corpus, Search, Wiki, deterministic Chatbot, or Evaluation.
+
+For optional local synthesis, export the same non-secret variables shown in `.env.example`, set `USE_OPENAI_CHATBOT=true`, and provide `OPENAI_API_KEY` only through the local process environment or another ignored server-side secret mechanism. The application does not automatically load `.env`. Never place a real key in source, README files, screenshots, command history, or committed configuration.
+
+Before rebuilding the corpus, install the full dependencies and run the numbered scripts in order:
+
+```powershell
+python scripts/01_download_sources.py
+python scripts/02_extract_text.py
+python scripts/03_build_chunks.py
+python scripts/04_build_vector_index.py
+python scripts/05_extract_entities.py
+python scripts/06_generate_wiki.py
+python scripts/07_run_evaluation.py
+```
+
+Use `python scripts/01_download_sources.py --dry-run` before changing remote sources. Rebuilding the vector index may download the embedding model during local development; hosted startup never does so.
+
 ## 18. Docker and Hugging Face deployment
 
 ### 18.1 Docker image
@@ -519,6 +580,38 @@ The verified private deployment demonstrated:
 - Clean final build and runtime log audit
 
 The normal hosted restart returned to Running in approximately 49 seconds. A variable-change restart during the kill-switch test returned in approximately 67 seconds.
+
+### 18.4 Updating and redeploying the Space
+
+The current Space is `shanged/conservation-intelligence`, configured as a private Docker Space. Application updates should be prepared and tested locally, committed to the source repository, and packaged from a clean reviewed tree. Because the deployment includes database, Chroma, and model binaries, Hugging Face Xet-aware upload is required; an ordinary Git push was rejected by current Hub binary-file policy.
+
+The safe redeployment sequence is:
+
+1. Confirm the local test suite and Docker packaging checks pass.
+2. Review `git status`, the complete candidate diff, `.gitignore`, and `.dockerignore`.
+3. Scan the candidate for `.env`, credentials, logs, raw/processed corpus files, caches, local-only databases, and personal paths.
+4. Build or refresh only the approved `deployment_artifacts/` package when corpus artifacts actually changed.
+5. Upload from a clean release tree with the authenticated Hugging Face client/Xet workflow; do not run a broad upload from a dirty working directory.
+6. Monitor **Space -> Logs** for Docker build and container startup errors.
+7. Verify all five tabs, one deterministic question, one bounded synthesis question, insufficient-evidence behavior, restart behavior, and the OpenAI kill switch.
+
+The required Hugging Face Secret is `OPENAI_API_KEY`. Supported non-secret Variables are `USE_OPENAI_CHATBOT`, `OPENAI_MODEL`, `OPENAI_MAX_OUTPUT_TOKENS`, `OPENAI_REQUEST_TIMEOUT_SECONDS`, `OPENAI_MAX_RETRIES`, `OPENAI_MAX_QUESTION_CHARS`, `OPENAI_MAX_EVIDENCE_ITEMS`, `OPENAI_MAX_CONTEXT_CHARS`, `OPENAI_SESSION_REQUEST_QUOTA`, and `OPENAI_REQUEST_COOLDOWN_SECONDS`. Secret values must be entered only through the Space Settings interface and must never be copied into Git URLs or Docker commands.
+
+### 18.5 External services and dependencies
+
+| Service or dependency | Implemented role |
+|---|---|
+| OpenAI Responses API | Optional bounded synthesis over locally retrieved evidence. It is not used for corpus storage, File Search, citation generation, or deterministic fallback. |
+| Hugging Face Spaces | Private Docker hosting, environment configuration, build/runtime logs, restart controls, and access management. |
+| Hugging Face Xet | Storage and transfer of the packaged database, vector index, and local embedding-model binaries. |
+| Streamlit | Interactive application, tab layout, session-only chat state, and presentation of sources/evaluation. |
+| SQLite | Canonical local provenance and structured records. |
+| Chroma | Local persistent semantic-vector collection. |
+| sentence-transformers / MiniLM | Local query and document-window embeddings. |
+| pypdf and Beautiful Soup | Offline PDF extraction and readable web-text cleaning. |
+| pandas | Metadata loading, filtering, and tabular display. |
+
+OpenAI File Search, an OpenAI vector store, a hosted corpus database, and external web search are not part of the implementation.
 
 ## 19. Security and privacy design
 
@@ -571,7 +664,38 @@ Normal application startup is intentionally not a substitute for this controlled
 - Free Hugging Face CPU hardware can sleep and has noticeable cold-start and first-query latency.
 - The approximately 203 MB deployment requires Xet-aware upload handling.
 
-## 22. Conclusion
+### 21.1 Differences from the original design direction
+
+Several choices were refined during implementation to match the small, public, reproducible prototype:
+
+- Retrieval is local MiniLM plus Chroma rather than OpenAI File Search or an OpenAI-hosted vector store. This keeps the corpus and provenance artifacts inspectable and allows fully local operation.
+- Entity and relationship extraction is controlled and rule-based rather than LLM-generated. This favors traceability and stable rebuilds over broad extraction recall.
+- The Wiki is deterministic Markdown generated offline, not a live generative wiki service.
+- The chatbot began as deterministic extractive answering. OpenAI was added later as an optional synthesis layer around the existing retrieval system rather than replacing it.
+- Citation validation is performed locally against SQLite; the model is never trusted to construct final document citations.
+- The hosted application packages a complete embedding-model snapshot and operates with Hugging Face/Transformers offline mode. Startup cannot silently download or rebuild artifacts.
+- Chroma is copied to temporary writable storage per process because its query path may perform bookkeeping, while canonical deployment artifacts remain read-only.
+- Only public conservation documents are included. Raw PDFs and processed corpus text are excluded from the hosted repository because normal runtime needs only precomputed artifacts and approved evidence outputs.
+- Deployment uses a private Docker Space and Xet storage. No public deployment, OpenAI corpus upload, persistent user history, or feedback database was implemented.
+
+These are deliberate implementation decisions, not incomplete placeholders. Future maintainers should preserve the provenance and fallback guarantees when considering alternative services.
+
+## 22. Quick handoff checklist
+
+- [ ] Confirm access to `https://github.com/shanged/conservation-intelligence`.
+- [ ] Confirm authenticated access to the private `shanged/conservation-intelligence` Hugging Face Space.
+- [ ] Confirm `OPENAI_API_KEY` exists only as a server-side secret and `USE_OPENAI_CHATBOT` is set to the intended state.
+- [ ] Review `.env.example` and `scripts/openai_config.py` before changing configuration limits.
+- [ ] Locate the corpus inventory in `data/metadata.csv` and the offline build order in `scripts/01_...` through `07_...`.
+- [ ] Confirm `deployment_artifacts/` contains SQLite, Chroma, and the local MiniLM snapshot.
+- [ ] Start locally with `streamlit run app.py` and verify all five tabs.
+- [ ] Run the complete tests before changing retrieval, citations, routing, or packaging.
+- [ ] Treat `scripts/citation_validation.py` and deterministic fallback behavior as security boundaries.
+- [ ] Use a clean reviewed release tree and Hugging Face Xet-aware upload for deployment binaries.
+- [ ] Check private Space build and runtime logs after every deployment without copying secrets.
+- [ ] Verify Corpus 35, Wiki 15, semantic Search, deterministic Chatbot, Evaluation 10/10, one bounded synthesis request, insufficient evidence, restart, and kill switch.
+
+## 23. Conclusion
 
 The prototype was implemented as an evidence system first and an AI synthesis system second. Its foundational artifacts—metadata, page-aware chunks, SQLite provenance, local embeddings, entity evidence, wiki pages, and deterministic answers—remain usable without OpenAI. Optional synthesis improves readability while operating inside a bounded evidence and citation-validation contract.
 
