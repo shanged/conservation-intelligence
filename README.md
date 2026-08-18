@@ -7,62 +7,78 @@ sdk: docker
 app_port: 7860
 ---
 
-# Conservation Document Intelligence Prototype
+# Conservation Document Intelligence
 
-A local, reproducible demonstration of public-document intelligence for
-conservation research. The prototype organizes a 35-source corpus, extracts
-citable text and structured facts, builds an evidence-backed wiki, and answers
-questions with inspectable source citations.
+An open, reproducible research prototype for searching and analyzing public
+conservation documents with traceable citations.
 
-This is an experimental research prototype analyzing public conservation
-documents. Answers may be incomplete or incorrect. Verify important conclusions
-against the cited source documents before relying on them.
+The project turns a curated 35-source corpus into keyword and semantic search,
+an evidence-backed wiki, structured entities and relationships, and a chatbot
+that links its claims back to document and page-level evidence. It runs locally
+without an external LLM by default; optional OpenAI synthesis can be enabled by
+the operator after local evidence retrieval.
 
-## Privacy and safe use
+> [!IMPORTANT]
+> This is an experimental research tool, not an authoritative conservation
+> database or decision-making system. Results can be incomplete or incorrect.
+> Verify important claims against the cited source documents.
 
-When optional OpenAI synthesis is enabled, the submitted question and selected
-excerpts from the public conservation corpus may be sent to OpenAI. The
-application does not intentionally persist submitted questions, model responses,
-retrieved excerpts, or session histories to application storage. Do not submit
-confidential, sensitive, private, or personally identifying information. This
-design does not imply that input is anonymous or cryptographically private, and
-it makes no broader claim about provider data handling beyond the configured API
-request behavior.
+## What is included
 
-When OpenAI synthesis is disabled, chatbot answers remain on the local
-deterministic retrieval/response path. Every answer identifies whether it used
-AI synthesis or local deterministic fallback. Insufficient corpus evidence is
-shown as a research limitation, distinct from temporary service errors and
-request limits.
+- A Streamlit interface with **Corpus**, **Search**, **Wiki**, **Chatbot**, and
+  **Evaluation** tabs.
+- Metadata for 35 public conservation sources (`DOC001`–`DOC035`).
+- A packaged SQLite corpus, local Chroma index, and
+  `sentence-transformers/all-MiniLM-L6-v2` snapshot for clean-checkout use.
+- 15 generated, evidence-backed wiki pages.
+- Deterministic cited answers that require no API key or paid service.
+- Optional, bounded OpenAI synthesis with local citation validation and a
+  deterministic fallback.
+- Tests covering retrieval, citation integrity, request controls, UI safety,
+  runtime artifact integrity, and Docker packaging.
 
-## Pipeline
+## How it works
 
 ```text
-Public documents → ingestion → text extraction → page-aware chunks
-                 → semantic search → entities/relations → wiki
-                 → citation-grounded chatbot → heuristic evaluation
+Public sources → ingestion → page-aware text chunks → SQLite
+                                                ├─→ keyword search
+                                                ├─→ local embeddings → Chroma
+                                                ├─→ entities/relations → wiki
+                                                └─→ cited chatbot → evaluation
 ```
 
-The system is a research prototype, not a production crawler or authoritative
-conservation database. Source metadata and documented substitutions are kept in
-`data/metadata.csv`.
+Semantic retrieval uses overlapping MiniLM embedding windows that are regrouped
+into their original SQLite chunks. PDF evidence is cited by page or page range,
+such as `[DOC012, pp. 5–6]`; saved web pages use citations such as
+`[DOC023, Web]`. Source metadata and substitutions are documented in
+[`data/metadata.csv`](data/metadata.csv) and
+[`docs/source_classification.md`](docs/source_classification.md).
 
-## Setup on Windows
+## Quick start
 
-Python 3.10 or newer is recommended.
+Python 3.10 or newer is recommended. From the repository root on Windows:
 
 ```powershell
 python -m venv .venv
 .venv\Scripts\Activate.ps1
+python -m pip install -r requirements.runtime.txt
+streamlit run app.py
+```
+
+The application automatically uses the packaged runtime artifacts in
+`deployment_artifacts/` when local build outputs are absent. No API key is
+needed for search, wiki browsing, evaluation, or deterministic chatbot answers.
+
+To install the additional ingestion and corpus-building tools instead:
+
+```powershell
 python -m pip install -r requirements.txt
 ```
 
-The local embedding model is downloaded by `sentence-transformers` when first
-needed. Subsequent builds and searches use its local cache.
+## Build the corpus from source metadata
 
-## Full build order
-
-Run these commands from the repository root:
+The precomputed runtime artifacts make a full rebuild optional. To reproduce
+the pipeline from the public source list, run:
 
 ```powershell
 python scripts/01_download_sources.py
@@ -72,7 +88,6 @@ python scripts/04_build_vector_index.py
 python scripts/05_extract_entities.py
 python scripts/06_generate_wiki.py
 python scripts/07_run_evaluation.py
-streamlit run app.py
 ```
 
 Useful inspection commands:
@@ -83,230 +98,167 @@ python scripts/search_chunks.py "wetland restoration"
 python scripts/semantic_search.py "wetland restoration" --top-k 5
 ```
 
-Pipeline scripts are safe to rerun: existing downloads are retained by default,
-and generated database, vector, entity, relation, wiki, and evaluation records
-are rebuilt without duplicate rows.
+Existing downloads are retained by default. Generated database, vector,
+entity, relation, wiki, and evaluation records are rebuilt rather than appended
+with duplicate rows.
 
-## Application
+## Optional OpenAI synthesis
 
-The Streamlit application has exactly five main tabs:
+OpenAI synthesis is disabled by default. When enabled, the local retrieval
+pipeline sends only the current question and a bounded set of selected public
+corpus excerpts—not full documents or chat history. Model-provided evidence IDs
+must match immutable local SQLite metadata before the application renders the
+corresponding `DOC` citations and source links.
 
-- **Corpus** — metadata, statuses, agency/topic filters, and extraction counts.
-- **Search** — keyword and local semantic retrieval.
-- **Wiki** — 15 persistent entity-centered evidence pages.
-- **Chatbot** — session-based cited answers with expandable source evidence.
-- **Evaluation** — results for the ten required demonstration questions.
+To configure it locally, copy `.env.example` to an ignored `.env` file, then
+load those values into the server process. The application does not
+automatically load `.env` files.
 
-## Corpus status
-
-- 35 metadata records (`DOC001`–`DOC035`)
-- 32 locally usable sources: 20 PDFs and 12 saved web/text sources
-- 3 sources requiring manual intervention: DOC014, DOC027, and DOC030
-- 977 SQLite retrieval chunks
-- 6,376 MiniLM embedding windows
-- 8,681 provenance-bearing entity records
-- 1,433 extracted relationships
-- 15 generated wiki pages
-
-See `data/metadata.csv` and `docs/source_classification.md` for download,
-representative-selection, substitution, and failure details.
-
-## Retrieval and citations
-
-Semantic retrieval uses `sentence-transformers/all-MiniLM-L6-v2` and a local
-Chroma index. Stored 600–900 word SQLite chunks are represented by overlapping
-180-word embedding windows; results are regrouped by their original chunks.
-
-PDF citations preserve extracted page or page-range metadata:
+Required operator settings are:
 
 ```text
-[DOC012, p. 5]
-[DOC012, pp. 5–6]
+OPENAI_API_KEY=<server-side secret>
+USE_OPENAI_CHATBOT=true
 ```
 
-Saved web pages use:
+Keep API keys in environment variables or hosting-platform secrets. Never put a
+key in source code, a Docker build argument, the Streamlit UI, or a committed
+`.env`/`.streamlit/secrets.toml` file. `USE_OPENAI_CHATBOT=false` is the
+immediate kill switch.
 
-```text
-[DOC023, Web]
+Request length, evidence count, output tokens, timeout, retries, per-session
+quota, and cooldown are bounded with conservative defaults in `.env.example`.
+Failures fall back to the deterministic local response. These application
+controls complement—but do not replace—provider-side budgets, rate limits, usage
+alerts, and key restrictions.
+
+## Privacy and safe use
+
+Do not submit confidential, sensitive, private, or personally identifying
+information. The application intentionally keeps chat history in Streamlit
+session state and does not write questions, answers, retrieved excerpts, or
+session history to its application database or output files. Hosting platforms,
+network intermediaries, and optional API providers may have their own logging
+and retention practices.
+
+When OpenAI synthesis is enabled, the question and selected excerpts are sent
+to OpenAI. This design does not make input anonymous or cryptographically
+private and makes no broader claim about provider data handling.
+
+The corpus is derived from public sources, but public availability does not
+necessarily grant unrestricted redistribution rights. Raw downloads and
+processed full text are intentionally excluded from Git. Review the original
+publisher's terms before redistributing source material or derived bulk data.
+
+## Security design
+
+- The hosted container runs as a non-root user.
+- Runtime model downloads are disabled in the Docker image; the reviewed model
+  snapshot is packaged locally.
+- Ingestion, extraction, and index-building scripts are excluded from the
+  runtime image.
+- SQLite is opened read-only, while Chroma uses a disposable temporary copy of
+  the packaged index for its query-time bookkeeping.
+- User-facing source links are restricted to validated HTTP(S) metadata URLs.
+- Retrieved documents are treated as untrusted data; optional synthesis has no
+  tools, browsing, code execution, or arbitrary URL authority.
+- ChromaDB is used only as an embedded `PersistentClient` over the packaged
+  local index. The project does not start or expose Chroma's HTTP/FastAPI server.
+- `.env`, Streamlit secrets, credentials, logs, raw documents, virtual
+  environments, caches, and transient database files are excluded from the
+  deployment context.
+
+### Current ChromaDB advisory
+
+As of August 16, 2026, `chromadb==1.5.9` is affected by
+`CVE-2026-45829` / `PYSEC-2026-311`, and no patched PyPI release is available.
+The published pre-authentication exploit targets Chroma's network server API;
+that API is not started or exposed by this application. Do not modify this
+deployment to run `chroma run`, expose port `8000`, use an untrusted Chroma
+server, or load an untrusted/remote collection configuration. Reassess and
+upgrade when Chroma publishes a compatible fix. See [`SECURITY.md`](SECURITY.md)
+for the supported boundary and reporting process.
+
+Before publishing a fork, scan both the current tree and Git history for
+credentials. If a real secret was ever committed, removing the file is not
+enough: revoke the secret and rewrite the affected history before publication.
+
+## Testing and evaluation
+
+Run the offline test suite:
+
+```powershell
+python -m unittest discover -s tests -v
 ```
 
-The chatbot diversifies semantic results across documents, uses approximately
-five to eight evidence items, and exposes every used title, document ID,
-location, URL, and snippet. Citations are validated against SQLite document and
-chunk metadata during evaluation.
+Run the deterministic evaluation:
 
-## Optional OpenAI configuration and deterministic fallback
+```powershell
+python scripts/07_run_evaluation.py
+```
 
-No OpenAI key, paid service, or external LLM is required. The default chatbot
-is deterministic and extractive: it selects relevant sentences from retrieved
-chunks, adds structured entity/relation evidence for aggregate questions, and
-refuses to answer when relevance and lexical-support checks indicate that the
-corpus evidence is insufficient.
-
-Optional OpenAI synthesis uses the Responses API only after the existing local
-MiniLM/Chroma pipeline retrieves and filters a bounded evidence set. The model
-receives the current question and approximately five to eight strong excerpts,
-identified as `E1` through `E8`; it receives neither full documents nor chat
-history. Model evidence references are validated and mapped to the existing
-local document/page citations before display. Retrieved text is explicitly
-treated as untrusted data, and tools, web search, browsing, code execution, and
-response storage are disabled.
-
-Citation integrity is enforced by `scripts/citation_validation.py`, not by the
-model. Each temporary evidence record contains its E-ID, chunk ID, document ID,
-stored title, page/Web location, stored source URL, exact excerpt, and semantic
-score. Every referenced record must match the immutable SQLite document and
-chunk rows, including document ownership, location, URL, title, and excerpt.
-The Responses API is constrained to return claim text plus an `evidence_ids`
-array selected from the supplied E-IDs. Local code converts that structured
-output into claim-adjacent citations, replaces E-IDs with final `DOC` citations,
-and populates the Sources panel from validated local records. A bounded repair
-request remains available for malformed legacy/free-text output.
-
-Answers with unknown E-IDs, invented document/page/URL metadata, unsafe links,
-mismatched SQLite provenance, or unsupported multi-document claims are rejected.
-Locally computed structured aggregates may establish corpus-wide counts without
-requiring the model to infer them from semantic excerpts. Sources are
-deduplicated by document, location, and trusted URL. The remaining validation is
-intentionally conservative and does not attempt general natural-language
-entailment.
-
-Natural-language inventory variants for agencies/organizations, threats,
-species, and habitats are routed through the structured entity database before
-synthesis. Aggregate answers must preserve every ranked row and its exact chunk
-and document counts. Representative citations are greedily diversified across
-documents so a corpus-wide result does not appear to come from one source.
-
-### Public-demo request controls
-
-Application-level controls use conservative defaults: questions are limited to
-750 normalized characters, at most 6 evidence items (hard ceiling 8) and 12,000
-combined request characters are sent, output is capped at 600 tokens, timeout
-is 20 seconds, and transient failures receive at most one retry. Authentication,
-invalid-request, safety/policy, configuration, and citation-validation failures
-are not retried.
-
-Each browser session receives 20 attempted OpenAI requests with a three-second
-cooldown. During quota, cooldown, or duplicate-rerun blocks, OpenAI is not
-called and the deterministic local answer is used with a short notice. Guards,
-quota counts, chat history, and bounded usage diagnostics live only in that
-Streamlit session; questions, answers, evidence, and diagnostics are not written
-to SQLite, JSON, logs, analytics, or other runtime files. Usage diagnostics
-contain only mode, latency, configured model, token counts when returned by the
-API, and a broad fallback reason.
-
-`USE_OPENAI_CHATBOT=false` is the immediate kill switch even when a key exists.
-These application safeguards do not replace OpenAI project budgets, usage
-alerts, rate limits, key restrictions, or billing controls, which must be
-configured separately on the server-side account.
-
-All limits are configurable with `OPENAI_MAX_QUESTION_CHARS`,
-`OPENAI_MAX_EVIDENCE_ITEMS`, `OPENAI_MAX_CONTEXT_CHARS`,
-`OPENAI_MAX_OUTPUT_TOKENS`, `OPENAI_REQUEST_TIMEOUT_SECONDS`,
-`OPENAI_MAX_RETRIES`, `OPENAI_SESSION_REQUEST_QUOTA`, and
-`OPENAI_REQUEST_COOLDOWN_SECONDS`. Invalid or out-of-range settings disable
-OpenAI synthesis and preserve deterministic fallback.
-
-`USE_OPENAI_CHATBOT` defaults to `false`. The existing deterministic chatbot
-remains the fallback when OpenAI is disabled, unavailable, misconfigured, times
-out, raises any request error, or returns empty, malformed, unsafe, or unknown
-evidence references. No OpenAI client is constructed while the feature is
-disabled.
-
-For local development, copy `.env.example` to an ignored `.env` file and add a
-key only on the developer machine. The application does not currently load
-`.env` automatically; export the variables into the server process if testing
-configuration. Never commit `.env` or `.streamlit/secrets.toml`. A future
-Hugging Face deployment will store `OPENAI_API_KEY` in Hugging Face Secrets,
-not in source code, build arguments, or image layers. Users must never be asked
-to enter an API key through the application UI.
-
-Supported variables are `OPENAI_API_KEY`, `USE_OPENAI_CHATBOT`, `OPENAI_MODEL`,
-`OPENAI_MAX_OUTPUT_TOKENS`, `OPENAI_REQUEST_TIMEOUT_SECONDS`, and
-`OPENAI_MAX_RETRIES`. See `.env.example` for safe non-secret defaults.
-
-### One future manual API smoke test (do not run during automated validation)
-
-1. Outside Codex, place one real key in the ignored local `.env` file, confirm
-   `git check-ignore .env`, and load those values into the Streamlit server
-   process without printing them. Alternatively, configure the same variables
-   as private Hugging Face Space Secrets when deployment is eventually allowed.
-2. Set `USE_OPENAI_CHATBOT=true`, keep `OPENAI_MAX_RETRIES=0`, and retain the
-   conservative token and timeout limits from `.env.example`.
-3. Start Streamlit locally, ask one known demo question, and confirm a grounded
-   answer with locally rendered `DOC` citations. Check only sanitized status;
-   never log request headers, environment values, or SDK exception payloads.
-4. Stop the server, disable OpenAI mode, and remove the key from the process.
-
-This is preparation only; the Step 4 validation suite uses fake clients and
-credentials and makes no network request.
-
-## Evaluation
-
-`tests/demo_questions.txt` contains exactly the ten questions required by the
-project specification. `scripts/07_run_evaluation.py` runs them through the same
-answering function used by Streamlit and writes:
-
-- `outputs/demo_answers.md` — readable evaluation report
-- `outputs/demo_answers.json` — structured data for the Evaluation tab
-
-Pass/fail statuses are automated integrity checks, not human ratings. They
-check answer presence, retrieved evidence, citation presence, known document
-IDs, and valid SQLite page/location values.
-
-### Deterministic vs hybrid comparison
-
-Run the separate offline comparison without an API key or paid request:
+Run the hybrid path with a fake Responses client and no paid request:
 
 ```powershell
 python scripts/08_run_hybrid_evaluation.py
 ```
 
-This preserves the original `demo_answers` baseline and writes
-`outputs/hybrid_evaluation.json` plus `outputs/hybrid_evaluation.md`. Offline
-mode uses a fake Responses client while exercising local retrieval, citation
-validation, latency/usage capture, comparative heuristics, and security cases.
-Completeness, extractiveness, source diversity, and wetland-summary checks are
-conservative indicators—not human factual-quality judgments.
+Evaluation pass/fail values are automated integrity checks, not expert ratings.
+They test evidence presence, known document IDs, valid locations, citation
+mapping, and selected safety behavior; they do not establish factual
+completeness or general natural-language entailment.
 
-Token usage is recorded when supplied by the response. Estimated cost remains
-unavailable unless the time-sensitive, non-secret
-`OPENAI_INPUT_COST_PER_MILLION_TOKENS` and
-`OPENAI_OUTPUT_COST_PER_MILLION_TOKENS` variables are configured. Pricing is
-never fetched dynamically or treated as permanent truth.
+## Current corpus snapshot
 
-Live mode is disabled by default. A future one-question paid smoke test requires
-an explicitly enabled OpenAI configuration and both flags:
+| Item | Count |
+|---|---:|
+| Source metadata records | 35 |
+| Locally usable sources | 32 |
+| Sources requiring manual intervention | 3 |
+| SQLite retrieval chunks | 977 |
+| MiniLM embedding windows | 6,376 |
+| Provenance-bearing entity records | 8,681 |
+| Extracted relationships | 1,433 |
+| Generated wiki pages | 15 |
 
-```powershell
-python scripts/08_run_hybrid_evaluation.py --live --limit 1
-```
-
-The command prints a paid-usage warning and never prints the API key. Do not run
-it until a real key and server-side spend controls have been configured outside
-Codex.
-
-## Known limitations
-
-- Three remote sources still require manual intervention.
-- PDF extraction sometimes retains broken hyphenation or OCR-like artifacts.
-- DOC007 and DOC008 represent the same underlying report, although repeated
-  snippets are deduplicated during wiki and chatbot evidence selection.
-- Rule-based entities and relationships favor transparency over exhaustive NLP.
-- Wiki summaries and chatbot responses are conservative evidence compilations,
-  not free-form LLM synthesis.
-- Semantic similarity is not proof of relevance; the chatbot therefore applies
-  document diversification, lexical support checks, and an explicit
-  insufficient-evidence response.
+The three records requiring manual intervention are `DOC014`, `DOC027`, and
+`DOC030`. Several sources use documented substitutions or representative
+documents when the originally specified page was unavailable or unsuitable for
+automated extraction.
 
 ## Repository layout
 
 ```text
-data/        Source metadata, raw downloads, and extracted text
-db/          SQLite database and local Chroma index
-scripts/     Reproducible pipeline and shared retrieval/chatbot code
-outputs/     Entities, relationships, and evaluation results
-wiki/        Generated evidence-backed Markdown pages
-tests/       Required demonstration questions
-docs/        Project specification and source classification
+app.py                  Streamlit application
+data/                   Public-source metadata (raw/full text is ignored)
+deployment_artifacts/   Verified database, vector index, and local model
+docs/                   Architecture, deployment, audit, and user guides
+outputs/                Derived entities, relationships, and evaluations
+scripts/                Ingestion, build, retrieval, chatbot, and safety code
+tests/                  Offline regression and security-behavior tests
+wiki/                   Generated evidence-backed Markdown pages
 ```
+
+## Deployment note
+
+The Hugging Face Space associated with this project is private and requires an
+authorized Hugging Face session. Making this GitHub repository public does not
+make that hosted application public. The included Dockerfile is the reviewed
+deployment path and listens on port `7860`.
+
+## Known limitations
+
+- Three remote sources still require manual intervention.
+- PDF extraction can preserve broken hyphenation and OCR-like artifacts.
+- `DOC007` and `DOC008` represent the same underlying report.
+- Rule-based entities and relationships favor inspectability over exhaustive
+  language understanding.
+- Semantic similarity is not proof of relevance.
+- Citation validation establishes provenance and formatting integrity; it does
+  not prove that every generated claim is fully entailed by its evidence.
+- The packaged model and indexes make the repository comparatively large.
+
+For deeper implementation and deployment detail, see
+[`docs/implementation_report.md`](docs/implementation_report.md),
+[`docs/deployment_security_audit.md`](docs/deployment_security_audit.md), and
+[`docs/private_hugging_face_deployment_report.md`](docs/private_hugging_face_deployment_report.md).
